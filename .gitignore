@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+ai-service/models/*.pkl
+ai-service/models/*.joblib
+.DS_Store
+node_modules/
+dist/
+build/
+*.log

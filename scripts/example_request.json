@@ -1,0 +1,20 @@
+{
+  "reviews": [
+    {
+      "review_id": "1",
+      "product_id": "P001",
+      "product_type": "phone",
+      "rating": 1,
+      "review_text": "Poor packaging and broken item",
+      "date": "2024-01-03"
+    },
+    {
+      "review_id": "2",
+      "product_id": "P001",
+      "product_type": "phone",
+      "rating": 5,
+      "review_text": "Good quality and fast delivery",
+      "date": "2024-01-04"
+    }
+  ]
+}

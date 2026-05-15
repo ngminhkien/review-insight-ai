@@ -1,0 +1,11 @@
+review_id,product_id,product_type,rating,review_text,date
+1,P001,phone,5,"Good quality and fast delivery",2024-01-02
+2,P001,phone,1,"Poor packaging and broken item",2024-01-03
+3,P001,phone,2,"Battery drains quickly and screen is flickering",2024-01-04
+4,P002,food,5,"Food was delicious and delivery was fast",2024-01-05
+5,P002,food,1,"Cold food and late delivery",2024-01-06
+6,P003,fashion,4,"Nice material and good value for price",2024-01-07
+7,P003,fashion,2,"Size is wrong and customer support is slow",2024-01-08
+8,P004,cosmetics,3,"The product is okay but fragrance is too strong",2024-01-09
+9,P004,cosmetics,1,"Skin irritation after using this product",2024-01-10
+10,P005,general,5,"Excellent product and helpful support",2024-01-11
