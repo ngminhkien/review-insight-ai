@@ -9,6 +9,9 @@ HIGH_RISK_KEYWORDS = [
     "never buy",
     "irritation",
     "late",
+    "terrible",  
+    "lag",       
+    "slow"
 ]
 
 

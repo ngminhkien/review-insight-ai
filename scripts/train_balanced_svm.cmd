@@ -9,6 +9,6 @@ set "SCRIPT=%ROOT%\ai-service\src\train_sentiment.py"
 set "DATA=%ROOT%\data\domains\electronics\raw_reviews_train_balanced.csv"
 set "REPORT=%ROOT%\ai-service\reports\classification_report_svm_balanced_dataset.json"
 
-"%PY%" "%SCRIPT%" --data "%DATA%" --model svm --no-char-ngram --neutral-boost 2.5 --report "%REPORT%"
+"%PY%" "%SCRIPT%" --data "%DATA%" --model svm --neutral-boost 1.5 --report "%REPORT%"
 
 endlocal
