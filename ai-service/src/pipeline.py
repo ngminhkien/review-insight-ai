@@ -8,17 +8,26 @@ from .insight_generator import generate_template_insights
 from .preprocess import clean_text, normalize_rating, rating_to_sentiment
 from .priority import detect_priority
 from .recommendation import generate_recommendations
+from .sentiment_model import predict_sentiment
 
-
-def analyze_single_review(review: Dict[str, Any], use_model: bool = False) -> Dict[str, Any]:
-    """Analyze one review. Starter version can use rating-based sentiment fallback."""
+def analyze_single_review(review: Dict[str, Any], use_model: bool = True) -> Dict[str, Any]:
+    """Analyze one review using the trained ML model with a rating fallback."""
     rating = normalize_rating(review.get("rating", 3))
     clean = clean_text(review.get("review_text", ""))
 
-    # Starter fallback: use rating-derived sentiment.
-    # Later, replace with trained ML model prediction from sentiment_model.predict_sentiment.
-    sentiment = rating_to_sentiment(rating)
-    confidence = 0.75
+    # Lắp não thật: Gọi mô hình AI vừa train để dự đoán câu chữ
+    if use_model:
+        try:
+            model_result = predict_sentiment([clean])[0]
+            sentiment = model_result["sentiment"]
+            confidence = model_result["confidence"] if model_result["confidence"] is not None else 0.75
+        except Exception as e:
+            # Nếu file model .pkl chưa load được, tự động lùi về dự phòng bằng số sao
+            sentiment = rating_to_sentiment(rating)
+            confidence = 0.50
+    else:
+        sentiment = rating_to_sentiment(rating)
+        confidence = 0.50
 
     product_type = review.get("product_type", "general") or "general"
     aspects = detect_aspects(clean, product_type=product_type)
@@ -37,7 +46,6 @@ def analyze_single_review(review: Dict[str, Any], use_model: bool = False) -> Di
         "aspects": aspects,
         "priority": priority,
     }
-
 
 def analyze_batch_reviews(reviews: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Analyze list of review dicts and return results + analytics."""

@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from tqdm import tqdm
 
 if __package__ in (None, ""):
     import sys
@@ -61,26 +62,50 @@ def main() -> None:
 
     csv_path = Path(args.data)
 
+    
     # Đọc chỉ các cột cần thiết để tiết kiệm RAM
-    # Đọc chỉ các cột cần thiết để tiết kiệm RAM
+    print(f"Đang đọc dữ liệu từ: {csv_path}...")
+    
+    # Chia file CSV lớn thành các khối nhỏ (ví dụ 50,000 dòng mỗi khối)
+    chunk_size = 50000 
+    chunks = []
+    
+    # Đọc file và hiển thị thanh tiến trình
     try:
-        df = pd.read_csv(
-            csv_path, 
-            usecols=REQUIRED_COLUMNS, 
-            nrows=args.max_rows, 
-            dtype=str,               # Đọc mọi thứ là chuỗi (string)
-            encoding="utf-8",        # Bắt buộc dùng UTF-8 để không lỗi trên Windows
-            on_bad_lines="skip"      # Nếu có dòng bị hỏng dấu phẩy thì bỏ qua dòng đó
+        csv_reader = pd.read_csv(
+            csv_path,
+            usecols=REQUIRED_COLUMNS,
+            dtype=str,
+            encoding="utf-8",
+            on_bad_lines="skip",
+            chunksize=chunk_size
         )
+        
+        for chunk in tqdm(csv_reader, desc="Đang nạp CSV vào RAM"):
+            chunks.append(chunk)
+            
+        df = pd.concat(chunks, ignore_index=True)
+        
+        # Nếu có giới hạn số dòng (max_rows)
+        if args.max_rows:
+            df = df.head(args.max_rows)
+            
     except ValueError:
-        # Một số column có thể không có trong file → đọc toàn bộ rồi warn
-        df = pd.read_csv(
-            csv_path, 
-            nrows=args.max_rows, 
-            dtype=str, 
-            encoding="utf-8", 
-            on_bad_lines="skip"
+        # Dự phòng trường hợp thiếu cột
+        print("Cảnh báo: Không tìm thấy đủ cột yêu cầu, đang đọc toàn bộ file...")
+        csv_reader = pd.read_csv(
+            csv_path,
+            dtype=str,
+            encoding="utf-8",
+            on_bad_lines="skip",
+            chunksize=chunk_size
         )
+        for chunk in tqdm(csv_reader, desc="Đang nạp CSV (Chế độ dự phòng)"):
+            chunks.append(chunk)
+            
+        df = pd.concat(chunks, ignore_index=True)
+        if args.max_rows:
+            df = df.head(args.max_rows)
 
     missing = validate_columns(df)
     if missing:
