@@ -62,11 +62,25 @@ def main() -> None:
     csv_path = Path(args.data)
 
     # Đọc chỉ các cột cần thiết để tiết kiệm RAM
+    # Đọc chỉ các cột cần thiết để tiết kiệm RAM
     try:
-        df = pd.read_csv(csv_path, usecols=REQUIRED_COLUMNS, nrows=args.max_rows)
+        df = pd.read_csv(
+            csv_path, 
+            usecols=REQUIRED_COLUMNS, 
+            nrows=args.max_rows, 
+            dtype=str,               # Đọc mọi thứ là chuỗi (string)
+            encoding="utf-8",        # Bắt buộc dùng UTF-8 để không lỗi trên Windows
+            on_bad_lines="skip"      # Nếu có dòng bị hỏng dấu phẩy thì bỏ qua dòng đó
+        )
     except ValueError:
         # Một số column có thể không có trong file → đọc toàn bộ rồi warn
-        df = pd.read_csv(csv_path, nrows=args.max_rows)
+        df = pd.read_csv(
+            csv_path, 
+            nrows=args.max_rows, 
+            dtype=str, 
+            encoding="utf-8", 
+            on_bad_lines="skip"
+        )
 
     missing = validate_columns(df)
     if missing:
