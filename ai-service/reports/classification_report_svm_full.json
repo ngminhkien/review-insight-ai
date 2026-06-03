@@ -1,0 +1,65 @@
+{
+  "negative": {
+    "precision": 0.8974968535869109,
+    "recall": 0.793104513577806,
+    "f1-score": 0.8420776409230315,
+    "support": 32369.0
+  },
+  "neutral": {
+    "precision": 0.34609499061642846,
+    "recall": 0.8452263432520096,
+    "f1-score": 0.4910994120900506,
+    "support": 14182.0
+  },
+  "positive": {
+    "precision": 0.9916698386671742,
+    "recall": 0.8837181996086105,
+    "f1-score": 0.9345870471039488,
+    "support": 153300.0
+  },
+  "accuracy": 0.8663104012489304,
+  "macro avg": {
+    "precision": 0.7450872276235044,
+    "recall": 0.8406830188128088,
+    "f1-score": 0.7559213667056769,
+    "support": 199851.0
+  },
+  "weighted avg": {
+    "precision": 0.9306052062704451,
+    "recall": 0.8663104012489304,
+    "f1-score": 0.8881325454580365,
+    "support": 199851.0
+  },
+  "model_name": "svm",
+  "oversample_neutral": false,
+  "neutral_weight_boost": 1.5,
+  "use_char_ngram": true,
+  "accuracy_score": 0.8663104012489304,
+  "confusion_matrix": [
+    [
+      25672,
+      6357,
+      340
+    ],
+    [
+      1397,
+      11987,
+      798
+    ],
+    [
+      1535,
+      16291,
+      135474
+    ]
+  ],
+  "class_distribution_train": {
+    "positive": 613196,
+    "negative": 129474,
+    "neutral": 56731
+  },
+  "class_distribution_test": {
+    "positive": 153300,
+    "negative": 32369,
+    "neutral": 14182
+  }
+}

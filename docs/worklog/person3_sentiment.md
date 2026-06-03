@@ -106,3 +106,33 @@ Viec tiep theo:
 
 - Thu tang `--neutral-boost` len 3.0 hoac `--oversample-neutral`.
 - Neu chua tot hon, bo sung them neutral rating=3.
+
+## Ngay 5
+
+Da lam:
+
+- Chay full dataset SVM tren file `data/domains/electronics/raw_reviews_amazon_us.csv`.
+- Cap nhat script `scripts/train_full_svm.cmd` va luu report vao `ai-service/reports/classification_report_svm_full.json`.
+
+Ket qua:
+
+- Accuracy=0.8663.
+- neutral: P=0.3461, R=0.8452, F1=0.4911.
+- negative: P=0.8975, R=0.7931, F1=0.8421.
+- positive: P=0.9917, R=0.8837, F1=0.9346.
+- Class distribution train: positive=613,196, negative=129,474, neutral=56,731.
+
+File da sua:
+
+- `scripts/train_full_svm.cmd`
+- `ai-service/reports/classification_report_svm_full.json`
+
+Van de gap:
+
+- Neutral F1 con thap 0.4911 tren full dataset.
+- Model hien tai van gap can bang neutral de cai thien precision/recall cua nhom neutral.
+
+Viec tiep theo:
+
+- Thu `--neutral-boost` len 3.0 hoac ap dung `--oversample-neutral` tren full dataset.
+- Xem xet bo sung du lieu neutral hoac tinh lai class weight de nang cao neutral F1.

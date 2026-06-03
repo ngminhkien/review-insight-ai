@@ -9,6 +9,6 @@ set "SCRIPT=%ROOT%\ai-service\src\train_sentiment.py"
 set "DATA=%ROOT%\data\domains\electronics\raw_reviews_amazon_us.csv"
 set "REPORT=%ROOT%\ai-service\reports\classification_report_svm_full.json"
 
-"%PY%" "%SCRIPT%" --data "%DATA%" --model svm --report "%REPORT%"
+"%PY%" "%SCRIPT%" --data "%DATA%" --model svm --max-rows 1000000 --neutral-boost 1.5 --report "%REPORT%"
 
 endlocal
