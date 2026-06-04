@@ -5,6 +5,10 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+
 if __package__ in (None, ""):
     import sys
 
@@ -17,6 +21,38 @@ else:
     from .preprocess import preprocess_reviews, validate_columns
     from .sentiment_model import MODEL_CHOICES, cross_validate_model, train_model
 
+def plot_and_save_confusion_matrix(cm_data: list, output_image_path: Path) -> None:
+    """Vẽ ma trận nhầm lẫn bằng seaborn heatmap và lưu thành file ảnh png."""
+    plt.figure(figsize=(8, 6))
+    
+    # Định nghĩa nhãn theo đúng thứ tự sắp xếp mặc định của scikit-learn (thường là alphabet)
+    # Trong bài toán của bạn thứ tự là: negative, neutral, positive
+    labels = ["negative", "neutral", "positive"]
+    cm_array = np.array(cm_data)
+    
+    # Vẽ Heatmap
+    sns.heatmap(
+        cm_array, 
+        annot=True, 
+        fmt=",d", 
+        cmap="Blues", 
+        xticklabels=labels, 
+        yticklabels=labels,
+        cbar=True,
+        annot_kws={"size": 12, "weight": "bold"}
+    )
+    
+    plt.title("Confusion Matrix - Sentiment Model (SVM)", fontsize=14, pad=15, weight="bold")
+    plt.xlabel("Predicted Labels (Nhãn dự đoán)", fontsize=12, labelpad=10)
+    plt.ylabel("True Labels (Nhãn thực tế)", fontsize=12, labelpad=10)
+    plt.tight_layout()
+    
+    # Đảm bảo thư mục reports tồn tại và lưu file
+    output_image_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(output_image_path, dpi=300)
+    plt.close()
+    print(f"Confusion matrix image saved → {output_image_path}") 
+    
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train baseline sentiment model")
@@ -193,6 +229,12 @@ def main() -> None:
 
     print(f"\nReport saved → {report_path}")
     print("Training completed")
+
+    #  Vẽ và lưu ma trận nhầm lẫn dạng ảnh ---
+    if "confusion_matrix" in report:
+        # Đường dẫn lưu file ảnh: reports/confusion_matrix.png
+        img_path = report_path.parent / "confusion_matrix.png"
+        plot_and_save_confusion_matrix(report["confusion_matrix"], img_path)
 
 
 if __name__ == "__main__":

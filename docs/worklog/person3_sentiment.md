@@ -106,3 +106,45 @@ Viec tiep theo:
 
 - Thu tang `--neutral-boost` len 3.0 hoac `--oversample-neutral`.
 - Neu chua tot hon, bo sung them neutral rating=3.
+
+## Ngay 5
+
+Da lam:
+
+- Chay full dataset SVM tren file `data/domains/electronics/raw_reviews_amazon_us.csv`.
+- Cap nhat script `scripts/train_full_svm.cmd` va luu report vao `ai-service/reports/classification_report_svm_full.json`.
+
+Ket qua:
+
+- Accuracy=0.8663.
+- neutral: P=0.3461, R=0.8452, F1=0.4911.
+- negative: P=0.8975, R=0.7931, F1=0.8421.
+- positive: P=0.9917, R=0.8837, F1=0.9346.
+- Class distribution train: positive=613,196, negative=129,474, neutral=56,731.
+
+File da sua:
+
+- `scripts/train_full_svm.cmd`
+- `ai-service/reports/classification_report_svm_full.json`
+
+Van de gap:
+
+- Neutral F1 con thap 0.4911 tren full dataset.
+- Model hien tai van gap can bang neutral de cai thien precision/recall cua nhom neutral.
+
+Viec tiep theo:
+
+- Thu `--neutral-boost` len 3.0 hoac ap dung `--oversample-neutral` tren full dataset.
+- Xem xet bo sung du lieu neutral hoac tinh lai class weight de nang cao neutral F1.
+
+## Ngay 6 (Hoan thanh tich hop & Kiem thu luong Batch)
+
+### Da lam:
+- sinh file ảnh biểu đồ dạng Heatmap (Biểu đồ nhiệt) chuyên nghiệp, sau đó lưu thành file ảnh reports/confusion_matrix.png theo đúng mô tả danh mục Output được giao.
+- Tích hợp thành công mô hình học máy thật (file `sentiment_model.pkl`) vào luồng xử lý API (`pipeline.py`).
+- Tiến hành kiểm thử hàm dự đoán hàng loạt `POST /analyze-batch` qua Swagger UI trên hai miền dữ liệu: Đồ ăn (Food) và Đồ điện tử (Electronics).
+
+### Ket qua:
+- Mô hình SVM Balanced đạt chỉ số Accuracy tổng thể là 81.72%, điểm Neutral F1-score đạt 0.6642 (Vượt mục tiêu đề ra >= 0.65).
+- Thử nghiệm trên miền dữ liệu chéo (Food): Mô hình bộc lộ nhược điểm (Domain Drift) do tập train gốc chỉ học từ vựng đồ điện tử.
+- Thử nghiệm trên miền dữ liệu chuẩn (Electronics): Mô hình chạy tối ưu, nhận diện đúng Sắc thái (Sentiment) và Độ tự tin (Confidence) đạt tới 98.42% ở các câu chê mạnh. Luồng API trả về cấu trúc JSON analytics, insights đồng bộ hoàn hảo.
