@@ -1,3 +1,4 @@
+import re
 from typing import Dict, List
 
 ASPECT_KEYWORDS: Dict[str, List[str]] = {
@@ -24,6 +25,11 @@ PRODUCT_TYPE_ASPECTS: Dict[str, List[str]] = {
 }
 
 
+def _keyword_matches(text: str, keyword: str) -> bool:
+    pattern = r"\b" + re.escape(keyword.lower()) + r"\b"
+    return re.search(pattern, text) is not None
+
+
 def detect_aspects(clean_text: str, product_type: str = "general") -> List[str]:
     """Detect aspects from text using keyword dictionary."""
     allowed = PRODUCT_TYPE_ASPECTS.get(product_type, PRODUCT_TYPE_ASPECTS["general"])
@@ -31,6 +37,6 @@ def detect_aspects(clean_text: str, product_type: str = "general") -> List[str]:
     text = clean_text.lower()
     for aspect in allowed:
         keywords = ASPECT_KEYWORDS.get(aspect, [])
-        if any(keyword in text for keyword in keywords):
+        if any(_keyword_matches(text, keyword) for keyword in keywords):
             detected.append(aspect)
     return detected or ["general"]

@@ -2,44 +2,68 @@ from collections import Counter, defaultdict
 from typing import Any, Dict, List
 
 
-def aggregate_statistics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Aggregate review analysis results into dashboard-ready statistics."""
-    total = len(results)
-    sentiment_counter = Counter(item.get("sentiment", "unknown") for item in results)
-    priority_counter = Counter(item.get("priority", "unknown") for item in results)
+SENTIMENT_LABELS = ("positive", "neutral", "negative")
+PRIORITY_LABELS = ("high", "medium", "low")
 
-    negative_aspects = Counter()
-    positive_aspects = Counter()
-    product_sentiments = defaultdict(Counter)
 
-    for item in results:
-        sentiment = item.get("sentiment", "unknown")
-        product_id = item.get("product_id", "unknown")
-        aspects = item.get("aspects", [])
-        product_sentiments[product_id][sentiment] += 1
+def _count_sentiments(reviews: List[Dict[str, Any]]) -> Dict[str, int]:
+    counts = Counter(str(item.get("sentiment", "neutral")).lower() for item in reviews)
+    return {label: int(counts.get(label, 0)) for label in SENTIMENT_LABELS}
 
-        if sentiment == "negative":
-            negative_aspects.update(aspects)
-        elif sentiment == "positive":
-            positive_aspects.update(aspects)
+
+def _count_priorities(reviews: List[Dict[str, Any]]) -> Dict[str, int]:
+    counts = Counter(str(item.get("priority", "low")).lower() for item in reviews)
+    return {label: int(counts.get(label, 0)) for label in PRIORITY_LABELS}
+
+
+def _count_aspects_by_sentiment(
+    reviews: List[Dict[str, Any]],
+    sentiment: str,
+) -> Dict[str, int]:
+    counts: Counter[str] = Counter()
+    for item in reviews:
+        if str(item.get("sentiment", "")).lower() != sentiment:
+            continue
+        aspects = item.get("aspects") or []
+        for aspect in aspects:
+            counts[str(aspect)] += 1
+    return dict(counts.most_common())
+
+
+def _product_sentiments(reviews: List[Dict[str, Any]]) -> Dict[str, Dict[str, int]]:
+    product_counts: Dict[str, Counter[str]] = defaultdict(Counter)
+    for item in reviews:
+        product_id = str(item.get("product_id") or "unknown")
+        sentiment = str(item.get("sentiment", "neutral")).lower()
+        product_counts[product_id][sentiment] += 1
 
     return {
-        "total_reviews": total,
-        "sentiment_distribution": dict(sentiment_counter),
-        "priority_distribution": dict(priority_counter),
-        "top_negative_aspects": _counter_to_list(negative_aspects),
-        "top_positive_aspects": _counter_to_list(positive_aspects),
-        "product_sentiments": {pid: dict(counter) for pid, counter in product_sentiments.items()},
+        product_id: {label: int(counts.get(label, 0)) for label in SENTIMENT_LABELS}
+        for product_id, counts in product_counts.items()
     }
 
 
-def _counter_to_list(counter: Counter, top_n: int = 10) -> List[Dict[str, Any]]:
-    total = sum(counter.values()) or 1
-    return [
-        {
-            "aspect": name,
-            "count": count,
-            "percentage": round(count * 100 / total, 2),
-        }
-        for name, count in counter.most_common(top_n)
-    ]
+def aggregate_statistics(reviews: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Convert analyzed review rows into dashboard-ready aggregate statistics.
+
+    Input reviews are expected to already contain fields such as sentiment,
+    aspects, priority, and product_id from the analysis pipeline.
+    """
+    total_reviews = len(reviews)
+    sentiment_distribution = _count_sentiments(reviews)
+    priority_distribution = _count_priorities(reviews)
+    top_negative_aspects = _count_aspects_by_sentiment(reviews, "negative")
+    top_positive_aspects = _count_aspects_by_sentiment(reviews, "positive")
+
+    return {
+        "total_reviews": total_reviews,
+        "positive": sentiment_distribution["positive"],
+        "neutral": sentiment_distribution["neutral"],
+        "negative": sentiment_distribution["negative"],
+        "sentiment_distribution": sentiment_distribution,
+        "priority_distribution": priority_distribution,
+        "top_negative_aspects": top_negative_aspects,
+        "top_positive_aspects": top_positive_aspects,
+        "product_sentiments": _product_sentiments(reviews),
+    }

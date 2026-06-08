@@ -62,6 +62,11 @@ GET http://localhost:8001/health
 ```text
 POST /analyze-single
 POST /analyze-batch
+POST /analyze-reviews
+POST /predict-sentiment
+POST /extract-aspects
+POST /detect-priority
+POST /aggregate-analytics
 POST /generate-insight
 GET /health
 ```

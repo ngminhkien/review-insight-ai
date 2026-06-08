@@ -1,5 +1,6 @@
 # Worklog - Person 3 Sentiment Model
 
+
 ## Ngay 1
 
 Da lam:
@@ -148,3 +149,63 @@ Viec tiep theo:
 - Mô hình SVM Balanced đạt chỉ số Accuracy tổng thể là 81.72%, điểm Neutral F1-score đạt 0.6642 (Vượt mục tiêu đề ra >= 0.65).
 - Thử nghiệm trên miền dữ liệu chéo (Food): Mô hình bộc lộ nhược điểm (Domain Drift) do tập train gốc chỉ học từ vựng đồ điện tử.
 - Thử nghiệm trên miền dữ liệu chuẩn (Electronics): Mô hình chạy tối ưu, nhận diện đúng Sắc thái (Sentiment) và Độ tự tin (Confidence) đạt tới 98.42% ở các câu chê mạnh. Luồng API trả về cấu trúc JSON analytics, insights đồng bộ hoàn hảo.
+ 
+## Ngay 7 (Giai doan 4 - Sentiment inference)
+
+Da lam:
+
+- Doc lai trang thai du an hien tai qua `README.md`, `docs/team_plan.md`, `docs/run_guide.md`, `docs/api_contract.md` va cac worklog trong `docs/worklog/`.
+- Kiem tra luong AI hien co: FastAPI nhan review, preprocess text, goi model sentiment da train, detect aspect, detect priority, tong hop analytics/insight/recommendation.
+- Xac dinh core inference da co trong `ai-service/src/sentiment_model.py` qua ham `predict_sentiment(texts)`, nhung chua co endpoint rieng cho input text moi theo output toi gian cua giai doan 4.
+- Them endpoint `POST /predict-sentiment` de nhan review text moi va tra ve sentiment + confidence.
+- Endpoint moi clean text bang `clean_text()` truoc khi dua vao model, giu dong bo voi preprocessing cua pipeline hien tai.
+- Them test API co mock model de kiem tra contract toi gian, khong phu thuoc vao file `.pkl` khi chay unit test.
+- Cap nhat `docs/api_contract.md` va `ai-service/README.md` de Backend/nhom biet cach goi endpoint inference moi.
+
+Input mau:
+
+```json
+{
+  "text": "The product is good"
+}
+```
+
+Output mau:
+
+```json
+{
+  "sentiment": "positive",
+  "confidence": 0.91
+}
+```
+
+Ket qua:
+
+- Da co API rieng cho sentiment inference cua review moi: `POST /predict-sentiment`.
+- Output dung muc tieu giai doan 4: chi gom `sentiment` va `confidence`.
+- Van giu endpoint tong hop cu `/analyze-single` va `/analyze-batch` cho luong dashboard day du.
+
+File da sua:
+
+- `ai-service/src/api.py`
+- `ai-service/tests/test_api_sentiment.py`
+- `docs/api_contract.md`
+- `ai-service/README.md`
+- `docs/worklog/person3_sentiment.md`
+
+Kiem thu:
+
+- Da chay compile check: `py -m py_compile src\api.py tests\test_api_sentiment.py` va pass.
+- Chua chay duoc pytest vi moi truong Python hien tai thieu package `pytest`.
+- Chua chay duoc smoke test FastAPI/model that vi moi truong Python hien tai thieu package runtime nhu `fastapi`.
+
+Van de gap:
+
+- Can cai dependency trong virtualenv cua `ai-service` truoc khi chay pytest va Swagger test.
+- Confidence phu thuoc vao model da train va kha nang `predict_proba` cua classifier da luu.
+
+Viec tiep theo:
+
+- Cai dependency bang `pip install -r requirements.txt` trong virtualenv.
+- Chay `py -m pytest` hoac `python -m pytest`.
+- Chay `uvicorn src.api:app --reload --port 8001`, test `/predict-sentiment` tren Swagger voi cau `"The product is good"`.
