@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Review Insight Backend Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --line: #d7dce2;
+      --text: #17202a;
+      --muted: #667085;
+      --accent: #0f766e;
+      --accent-dark: #115e59;
+      --danger: #b42318;
+      --warning: #b54708;
+      --good: #047857;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 68px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 21px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    main {
+      padding: 24px 0 40px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfcfd;
+      min-height: 74px;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    button {
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: white;
+      border-radius: 6px;
+      min-height: 36px;
+      padding: 0 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: var(--accent-dark);
+    }
+
+    button.secondary {
+      background: white;
+      color: var(--accent);
+    }
+
+    input[type="file"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 9px;
+      background: white;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      border-radius: 999px;
+      padding: 0 10px;
+      font-weight: 700;
+      background: #eef4ff;
+      color: #3538cd;
+    }
+
+    .status.ok {
+      background: #ecfdf3;
+      color: var(--good);
+    }
+
+    .status.bad {
+      background: #fef3f2;
+      color: var(--danger);
+    }
+
+    .message {
+      color: var(--muted);
+      min-height: 20px;
+      overflow-wrap: anywhere;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      background: #fbfcfd;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      border-radius: 999px;
+      padding: 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #eef2f6;
+      color: #344054;
+    }
+
+    .tag.positive,
+    .tag.low {
+      background: #ecfdf3;
+      color: var(--good);
+    }
+
+    .tag.neutral,
+    .tag.medium {
+      background: #fffaeb;
+      color: var(--warning);
+    }
+
+    .tag.negative,
+    .tag.high {
+      background: #fef3f2;
+      color: var(--danger);
+    }
+
+    .review-text {
+      max-width: 420px;
+    }
+
+    pre {
+      margin: 0;
+      max-height: 260px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #101828;
+      color: #f2f4f7;
+      padding: 12px;
+      font-size: 12px;
+    }
+
+    @media (max-width: 880px) {
+      .grid,
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 14px 0;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap topbar">
+      <h1>Review Insight Backend Dashboard</h1>
+      <div class="actions">
+        <span id="backendStatus" class="status">Checking</span>
+        <button class="secondary" id="refreshButton" type="button">Refresh</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Upload CSV</h2>
+        </div>
+        <div class="panel-body stack">
+          <form id="uploadForm" class="stack">
+            <input id="csvFile" type="file" name="file" accept=".csv" required>
+            <div class="actions">
+              <button type="submit">Upload and Analyze</button>
+            </div>
+          </form>
+          <div id="uploadMessage" class="message"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Summary</h2>
+        </div>
+        <div class="panel-body">
+          <div class="stats">
+            <div class="stat"><span>Total</span><strong id="totalReviews">0</strong></div>
+            <div class="stat"><span>Positive</span><strong id="positiveReviews">0</strong></div>
+            <div class="stat"><span>Neutral</span><strong id="neutralReviews">0</strong></div>
+            <div class="stat"><span>Negative</span><strong id="negativeReviews">0</strong></div>
+            <div class="stat"><span>High Priority</span><strong id="highPriority">0</strong></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel" style="margin-top: 18px;">
+      <div class="panel-head">
+        <h2>Recent Reviews</h2>
+      </div>
+      <div class="panel-body" style="padding: 0;">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Product</th>
+              <th>Rating</th>
+              <th>Sentiment</th>
+              <th>Priority</th>
+              <th>Review</th>
+            </tr>
+          </thead>
+          <tbody id="reviewsBody">
+            <tr><td colspan="6">No reviews yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <div class="panel-head">
+        <h2>Last API Response</h2>
+      </div>
+      <div class="panel-body">
+        <pre id="rawOutput">{}</pre>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const backendStatus = document.querySelector('#backendStatus');
+    const uploadForm = document.querySelector('#uploadForm');
+    const uploadMessage = document.querySelector('#uploadMessage');
+    const rawOutput = document.querySelector('#rawOutput');
+    const reviewsBody = document.querySelector('#reviewsBody');
+
+    document.querySelector('#refreshButton').addEventListener('click', refreshAll);
+    uploadForm.addEventListener('submit', uploadCsv);
+
+    refreshAll();
+
+    async function refreshAll() {
+      await checkHealth();
+      await loadDashboard();
+      await loadReviews();
+    }
+
+    async function checkHealth() {
+      try {
+        const data = await getJson('/api/health');
+        const aiOk = data.ai_service && data.ai_service.status === 'ok';
+        backendStatus.className = aiOk ? 'status ok' : 'status bad';
+        backendStatus.textContent = aiOk ? 'Backend + AI OK' : 'AI unavailable';
+        rawOutput.textContent = JSON.stringify(data, null, 2);
+      } catch (error) {
+        backendStatus.className = 'status bad';
+        backendStatus.textContent = 'Backend error';
+        rawOutput.textContent = error.message;
+      }
+    }
+
+    async function loadDashboard() {
+      const data = await getJson('/api/dashboard');
+      const summary = data.summary || {};
+      setText('#totalReviews', summary.total_reviews || 0);
+      setText('#positiveReviews', summary.positive || 0);
+      setText('#neutralReviews', summary.neutral || 0);
+      setText('#negativeReviews', summary.negative || 0);
+      setText('#highPriority', summary.high_priority || 0);
+    }
+
+    async function loadReviews() {
+      const data = await getJson('/api/reviews?limit=25');
+      const reviews = data.data || [];
+      if (reviews.length === 0) {
+        reviewsBody.innerHTML = '<tr><td colspan="6">No reviews yet.</td></tr>';
+        return;
+      }
+
+      reviewsBody.innerHTML = reviews.map((review) => `
+        <tr>
+          <td>${escapeHtml(review.id)}</td>
+          <td>${escapeHtml(review.product_id || '-')}</td>
+          <td>${escapeHtml(review.rating || '-')}</td>
+          <td>${tag(review.sentiment || 'pending')}</td>
+          <td>${tag(review.priority || 'pending')}</td>
+          <td class="review-text">${escapeHtml(review.review_text || '')}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function uploadCsv(event) {
+      event.preventDefault();
+      const fileInput = document.querySelector('#csvFile');
+      if (!fileInput.files.length) {
+        uploadMessage.textContent = 'Choose a CSV file first.';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      uploadMessage.textContent = 'Uploading and analyzing...';
+
+      try {
+        const response = await fetch('/api/reviews/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await response.json();
+        rawOutput.textContent = JSON.stringify(data, null, 2);
+
+        if (!response.ok) {
+          uploadMessage.textContent = data.error || 'Upload failed.';
+          return;
+        }
+
+        uploadMessage.textContent = `Uploaded ${data.total_reviews || 0} reviews. Report ID: ${data.report_id}.`;
+        await loadDashboard();
+        await loadReviews();
+      } catch (error) {
+        uploadMessage.textContent = error.message;
+      }
+    }
+
+    async function getJson(url) {
+      const response = await fetch(url);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || `Request failed: ${response.status}`);
+      }
+      return data;
+    }
+
+    function setText(selector, value) {
+      document.querySelector(selector).textContent = value;
+    }
+
+    function tag(value) {
+      const safe = escapeHtml(value);
+      return `<span class="tag ${safe}">${safe}</span>`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+  </script>
+</body>
+</html>

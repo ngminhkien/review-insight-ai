@@ -59,11 +59,31 @@ python -m ai-service.src.train_sentiment --data data/sample_reviews.csv
 
 Ghi chu: Cach import co the can sua lai khi nhom dong goi Python package chuan hon.
 
-## 5. Backend va Frontend
+## 5. Chay Backend PHP
 
-Hien tai chi co file huong dan:
+Mo terminal moi va chay:
+
+```bash
+cd backend
+php -S localhost:8080 -t public
+```
+
+Kiem tra backend:
+
+```bash
+curl http://localhost:8080/api/health
+```
+
+Upload CSV:
+
+```bash
+curl -X POST http://localhost:8080/api/reviews/upload \
+  -F "file=@backend/examples/sample_reviews.csv"
+```
+
+## 6. Backend va Frontend
 
 - `backend/README.md`
 - `frontend/README.md`
 
-Sau khi AI service on dinh, nhom co the tao project React va ASP.NET Core trong 2 folder nay.
+Frontend goi PHP backend tai `http://localhost:8080`, backend se goi Python AI service tai `http://localhost:8001`.

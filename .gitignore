@@ -12,3 +12,4 @@ build/
 *.log
 data/domains/
 *.csv
+!backend/examples/sample_reviews.csv

@@ -1,6 +1,6 @@
 # API Contract Giua Backend Va AI Service
 
-Backend C# se goi AI Service Python qua HTTP API.
+Backend PHP se goi AI Service Python qua HTTP API.
 
 ## Base URL local
 
