@@ -21,13 +21,15 @@ def analyze_single_review(review: Dict[str, Any], use_model: bool = True) -> Dic
             model_result = predict_sentiment([clean])[0]
             sentiment = model_result["sentiment"]
             confidence = model_result["confidence"] if model_result["confidence"] is not None else 0.75
+            sentiment_source = "trained_model"
         except Exception as e:
-            # Nếu file model .pkl chưa load được, tự động lùi về dự phòng bằng số sao
-            sentiment = rating_to_sentiment(rating)
-            confidence = 0.50
+            raise RuntimeError(
+                f"Trained sentiment model could not be loaded or used: {e}"
+            )
     else:
         sentiment = rating_to_sentiment(rating)
         confidence = 0.50
+        sentiment_source = "rating_fallback"
 
     product_type = review.get("product_type", "general") or "general"
     aspects = detect_aspects(clean, product_type=product_type)
@@ -43,6 +45,7 @@ def analyze_single_review(review: Dict[str, Any], use_model: bool = True) -> Dic
         "clean_text": clean,
         "sentiment": sentiment,
         "confidence": confidence,
+        "sentiment_source": sentiment_source,
         "aspects": aspects,
         "priority": priority,
     }
