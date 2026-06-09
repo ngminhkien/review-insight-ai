@@ -81,9 +81,26 @@ curl -X POST http://localhost:8080/api/reviews/upload \
   -F "file=@backend/examples/sample_reviews.csv"
 ```
 
-## 6. Backend va Frontend
+## 6. Chay Frontend React
 
+Mo terminal moi va chay:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Tren trinh duyet, truy cap:
+
+```text
+http://localhost:5173
+```
+
+## 7. Kien truc ket noi
+
+Frontend goi PHP backend tai `http://localhost:8080`, backend se goi Python AI service tai `http://localhost:8001`.
+- `ai-service/README.md`
 - `backend/README.md`
 - `frontend/README.md`
 
-Frontend goi PHP backend tai `http://localhost:8080`, backend se goi Python AI service tai `http://localhost:8001`.
