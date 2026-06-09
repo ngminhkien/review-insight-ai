@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+final class AiServiceException extends RuntimeException
+{
+}
+
 final class AiServiceClient
 {
     public function __construct(
@@ -80,7 +84,7 @@ final class AiServiceClient
     {
         $curl = curl_init($url);
         if ($curl === false) {
-            throw new RuntimeException('Cannot initialize cURL.');
+            throw new AiServiceException('Cannot initialize cURL.');
         }
 
         $headers = ['Accept: application/json'];
@@ -105,7 +109,7 @@ final class AiServiceClient
         curl_close($curl);
 
         if ($responseBody === false) {
-            throw new RuntimeException('AI service request failed: ' . $error);
+            throw new AiServiceException('AI service request failed: ' . $error);
         }
 
         return $this->decodeResponse($responseBody, $statusCode);
@@ -133,7 +137,7 @@ final class AiServiceClient
 
         $responseBody = file_get_contents($url, false, $context);
         if ($responseBody === false) {
-            throw new RuntimeException('AI service request failed.');
+            throw new AiServiceException('AI service request failed.');
         }
 
         $statusCode = 200;
@@ -151,11 +155,11 @@ final class AiServiceClient
     {
         $decoded = json_decode($responseBody, true);
         if (!is_array($decoded)) {
-            throw new RuntimeException('AI service returned invalid JSON.');
+            throw new AiServiceException('AI service returned invalid JSON.');
         }
 
         if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException('AI service returned HTTP ' . $statusCode . ': ' . json_encode($decoded));
+            throw new AiServiceException('AI service returned HTTP ' . $statusCode . ': ' . json_encode($decoded));
         }
 
         return $decoded;

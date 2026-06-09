@@ -40,8 +40,11 @@ export const UploadPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error(err);
+      const apiError = err.response?.data;
+      const detail = apiError?.details?.message;
       setError(
-        err.response?.data?.error || 
+        detail ? `${apiError.error} ${detail}` :
+        apiError?.error ||
         'Có lỗi xảy ra trong quá trình xử lý file CSV. Vui lòng kiểm tra lại định dạng file.'
       );
       setLoading(false);

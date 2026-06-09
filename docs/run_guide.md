@@ -1,106 +1,101 @@
 # Run Guide Chung
 
-Huong dan nay mo ta cach chay toan bo project theo tung phan.
+## Yeu cau
 
-## 1. Clone repo
+May can cai san:
 
-```bash
-git clone <your-repo-url>
-cd review-insight-ai
-```
+- PHP 8.1+ voi `pdo_sqlite` va `curl`.
+- Node.js 18+ va npm.
+- Python 3.
 
-## 2. Chay AI Service
+## Chay toan bo he thong
 
-```bash
-cd ai-service
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn src.api:app --reload --port 8001
-```
-
-Windows:
+Tu thu muc goc `review-insight-ai`, chi chay mot lenh:
 
 ```bash
-cd ai-service
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn src.api:app --reload --port 8001
+./scripts/dev.sh
 ```
 
-## 3. Test nhanh API
+Script tu dong:
 
-Mo trinh duyet:
+1. Cai frontend dependencies neu chua co.
+2. Tao `ai-service/.venv` neu chua co.
+3. Cai Python requirements neu chua co.
+4. Chay Python AI Service.
+5. Chay PHP Backend.
+6. Chay React Frontend.
+
+Backend va frontend chi duoc khoi dong sau khi AI Service tai port `8001`
+da tra health check thanh cong.
+
+Sau khi khoi dong:
 
 ```text
-http://localhost:8001/docs
+Frontend:   http://127.0.0.1:5173
+Backend:    http://127.0.0.1:8080
+AI Service: http://127.0.0.1:8001
+AI Docs:    http://127.0.0.1:8001/docs
 ```
 
-Hoac test health:
+Lan chay dau tien se lau hon vi script can cai npm va Python packages.
+Hay doi den khi terminal hien:
 
 ```text
-http://localhost:8001/health
+Python AI service ready.
+Development servers are running.
 ```
 
-## 4. Train model baseline
+Nhan `Ctrl+C` mot lan de dung ca ba service.
+
+## Kiem tra
+
+Kiem tra AI service:
 
 ```bash
-cd ai-service
-python src/train_sentiment.py --data ../data/sample_reviews.csv
+curl http://127.0.0.1:8001/health
 ```
 
-Neu loi import khi chay script, dung:
+Kiem tra backend va ket noi AI:
 
 ```bash
-cd review-insight-ai
-python -m ai-service.src.train_sentiment --data data/sample_reviews.csv
+curl http://127.0.0.1:8080/api/health
 ```
 
-Ghi chu: Cach import co the can sua lai khi nhom dong goi Python package chuan hon.
-
-## 5. Chay Backend PHP
-
-Mo terminal moi va chay:
-
-```bash
-cd backend
-php -S localhost:8080 -t public
-```
-
-Kiem tra backend:
-
-```bash
-curl http://localhost:8080/api/health
-```
-
-Upload CSV:
-
-```bash
-curl -X POST http://localhost:8080/api/reviews/upload \
-  -F "file=@backend/examples/sample_reviews.csv"
-```
-
-## 6. Chay Frontend React
-
-Mo terminal moi va chay:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Tren trinh duyet, truy cap:
+Mo ung dung:
 
 ```text
-http://localhost:5173
+http://127.0.0.1:5173
 ```
 
-## 7. Kien truc ket noi
+## Che do mock
 
-Frontend goi PHP backend tai `http://localhost:8080`, backend se goi Python AI service tai `http://localhost:8001`.
-- `ai-service/README.md`
-- `backend/README.md`
-- `frontend/README.md`
+Neu chi can test giao dien va backend ma khong muon chay model Python:
 
+```bash
+AI_MODE=mock ./scripts/dev.sh
+```
+
+## Xu ly loi port dang ban
+
+Dung cum server cu bang `Ctrl+C`. Neu terminal cu da mat, chay:
+
+```bash
+pkill -f "scripts/dev.sh"
+pkill -f "php -S 127.0.0.1:8080"
+pkill -f "uvicorn src.api:app"
+pkill -f "vite --host 127.0.0.1"
+```
+
+Sau do chay lai:
+
+```bash
+./scripts/dev.sh
+```
+
+## Kien truc ket noi
+
+```text
+React Frontend :5173
+    -> PHP Backend :8080
+        -> Python AI Service :8001
+```

@@ -47,6 +47,18 @@ review-insight-ai/
 2. Backend se goi API cua AI service.
 3. Frontend se goi API cua backend.
 
+Chay frontend, backend va Python AI service cung luc tu thu muc goc:
+
+```bash
+./scripts/dev.sh
+```
+
+Script tu dong cai dependency con thieu trong lan chay dau. Neu chi can mock AI:
+
+```bash
+AI_MODE=mock ./scripts/dev.sh
+```
+
 Chi tiet xem:
 
 - `ai-service/README.md`

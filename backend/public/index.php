@@ -172,6 +172,11 @@ HTML;
     ]);
 } catch (InvalidArgumentException $exception) {
     Response::error($exception->getMessage(), 422);
+} catch (AiServiceException $exception) {
+    Response::error('AI service is unavailable. Start the AI service and try again.', 502, [
+        'message' => $exception->getMessage(),
+        'ai_service_url' => Config::aiServiceUrl(),
+    ]);
 } catch (Throwable $exception) {
     Response::error('Internal server error.', 500, [
         'message' => $exception->getMessage(),
