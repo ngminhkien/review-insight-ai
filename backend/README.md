@@ -124,6 +124,14 @@ review_id,product_id,product_type,rating,review_text,date
 
 ## API
 
+### `GET /docs` hoặc `GET /api/docs`
+
+Giao diện tài liệu API trực quan (Swagger UI).
+
+### `GET /swagger.json`
+
+Tệp cấu hình OpenAPI specification dùng cho Swagger UI.
+
 ### `GET /api/health`
 
 Kiem tra backend va trang thai AI service.
