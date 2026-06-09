@@ -6,7 +6,7 @@ final class AiServiceClient
 {
     public function __construct(
         private readonly string $baseUrl,
-        private readonly int $timeoutSeconds = 30,
+        private readonly int $timeoutSeconds = 300,
     ) {
     }
 

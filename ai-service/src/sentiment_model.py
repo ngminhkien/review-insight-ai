@@ -340,11 +340,18 @@ def save_model(model: Pipeline) -> None:
         joblib.dump(model.named_steps["tfidf"], TFIDF_VECTORIZER_PATH)
 
 
+_MODEL_CACHE = None
+
 def load_model() -> Pipeline:
     """Load trained model."""
+    global _MODEL_CACHE
+    if _MODEL_CACHE is not None:
+        return _MODEL_CACHE
+        
     if not SENTIMENT_MODEL_PATH.exists():
         raise FileNotFoundError(f"Model not found: {SENTIMENT_MODEL_PATH}")
-    return joblib.load(SENTIMENT_MODEL_PATH)
+    _MODEL_CACHE = joblib.load(SENTIMENT_MODEL_PATH)
+    return _MODEL_CACHE
 
 
 def predict_sentiment(texts: List[str]) -> List[Dict[str, Any]]:
