@@ -220,6 +220,25 @@ final class ReviewRepository
     }
 
     /**
+     * @param array<string, mixed> $advice
+     */
+    public function saveLlmAdvice(int $reportId, array $advice, string $model): void
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE analysis_reports
+            SET llm_advice_json = :llm_advice_json,
+                llm_model = :llm_model,
+                llm_generated_at = CURRENT_TIMESTAMP
+            WHERE id = :id'
+        );
+        $statement->execute([
+            ':id' => $reportId,
+            ':llm_advice_json' => json_encode($advice, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ':llm_model' => $model,
+        ]);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function dashboard(): array
@@ -294,6 +313,11 @@ final class ReviewRepository
             'insights' => json_decode((string)$row['insights_json'], true) ?: [],
             'recommendations' => json_decode((string)$row['recommendations_json'], true) ?: [],
             'raw_response' => json_decode((string)$row['raw_response_json'], true) ?: [],
+            'llm_advice' => isset($row['llm_advice_json']) && $row['llm_advice_json'] !== null
+                ? (json_decode((string)$row['llm_advice_json'], true) ?: null)
+                : null,
+            'llm_model' => $row['llm_model'] ?? null,
+            'llm_generated_at' => $row['llm_generated_at'] ?? null,
             'created_at' => $row['created_at'],
         ];
     }

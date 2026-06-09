@@ -166,6 +166,48 @@ HTML;
         exit;
     }
 
+    if ($method === 'POST' && preg_match('#^/api/reports/(\d+)/generate-llm$#', $path, $matches)) {
+        $reportId = (int)$matches[1];
+        $report = $repository->findReport($reportId);
+        if ($report === null) {
+            Response::error('Report not found.', 404);
+            exit;
+        }
+
+        $payload = readOptionalJsonBody();
+        $rawResults = $report['raw_response']['results'] ?? [];
+        $reviews = is_array($rawResults) ? $rawResults : [];
+        $llmResponse = $aiClient->generateProductAdvice(
+            $report['analytics'],
+            $reviews,
+            isset($payload['model']) ? (string)$payload['model'] : null,
+        );
+        $llmReport = $llmResponse['llm_report'] ?? null;
+
+        if (!is_array($llmReport) || ($llmReport['enabled'] ?? false) !== true) {
+            Response::error('OpenAI LLM is not configured.', 422, [
+                'message' => $llmReport['reason'] ?? 'Set OPENAI_API_KEY and restart the services.',
+            ]);
+            exit;
+        }
+
+        $advice = $llmReport['advice'] ?? null;
+        if (!is_array($advice)) {
+            throw new RuntimeException('AI service returned an invalid LLM advice payload.');
+        }
+
+        $model = (string)($llmReport['model'] ?? 'unknown');
+        $repository->saveLlmAdvice($reportId, $advice, $model);
+
+        Response::json([
+            'message' => 'LLM product advice generated successfully.',
+            'report_id' => $reportId,
+            'model' => $model,
+            'advice' => $advice,
+        ]);
+        exit;
+    }
+
     Response::error('Route not found.', 404, [
         'method' => $method,
         'path' => $path,
@@ -190,6 +232,24 @@ function readJsonBody(): array
 {
     $rawBody = file_get_contents('php://input');
     $payload = json_decode($rawBody === false ? '' : $rawBody, true);
+    if (!is_array($payload)) {
+        throw new InvalidArgumentException('Request body must be valid JSON.');
+    }
+
+    return $payload;
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function readOptionalJsonBody(): array
+{
+    $rawBody = file_get_contents('php://input');
+    if ($rawBody === false || trim($rawBody) === '') {
+        return [];
+    }
+
+    $payload = json_decode($rawBody, true);
     if (!is_array($payload)) {
         throw new InvalidArgumentException('Request body must be valid JSON.');
     }

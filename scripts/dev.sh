@@ -11,6 +11,7 @@ AI_MODE="${AI_MODE:-real}"
 PIDS=()
 PYTHON_COMMAND=""
 AI_PID=""
+AI_REQUIREMENTS_STAMP="$ROOT_DIR/ai-service/.venv/.requirements-installed"
 
 cleanup() {
   trap - INT TERM EXIT
@@ -106,11 +107,14 @@ elif [ "$AI_MODE" = "real" ]; then
     "$PYTHON_COMMAND" -m venv "$ROOT_DIR/ai-service/.venv" || exit 1
   fi
 
-  if ! "$ROOT_DIR/ai-service/.venv/bin/python" -c \
+  if [ ! -f "$AI_REQUIREMENTS_STAMP" ] \
+    || [ "$ROOT_DIR/ai-service/requirements.txt" -nt "$AI_REQUIREMENTS_STAMP" ] \
+    || ! "$ROOT_DIR/ai-service/.venv/bin/python" -c \
     'import fastapi, uvicorn, pandas, numpy, sklearn, imblearn, joblib, dotenv, pydantic, openai' \
     >/dev/null 2>&1; then
     printf 'Installing AI service dependencies...\n'
     "$ROOT_DIR/ai-service/.venv/bin/python" -m pip install -r "$ROOT_DIR/ai-service/requirements.txt" || exit 1
+    touch "$AI_REQUIREMENTS_STAMP"
   fi
 
   printf 'Starting Python AI service: http://127.0.0.1:8001\n'

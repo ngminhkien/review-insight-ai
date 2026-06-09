@@ -45,6 +45,26 @@ export interface AnalysisReport {
   filename?: string;
   total_reviews?: number;
   status?: 'pending' | 'success' | 'failed';
+  llm_advice?: LlmProductAdvice | null;
+  llm_model?: string | null;
+  llm_generated_at?: string | null;
+}
+
+export interface ProductAssessment {
+  product_id: string;
+  product_type?: string | null;
+  overview: string;
+  strengths: string[];
+  issues: string[];
+  recommendations: string[];
+}
+
+export interface LlmProductAdvice {
+  executive_summary: string;
+  key_findings: string[];
+  product_assessments: ProductAssessment[];
+  priority_actions: string[];
+  limitations: string[];
 }
 
 export interface DashboardStats {
@@ -99,6 +119,15 @@ export const apiService = {
 
   getReport: async (id: number) => {
     const response = await client.get<AnalysisReport>(`/api/reports/${id}`);
+    return response.data;
+  },
+
+  generateLlmAdvice: async (id: number, model?: string) => {
+    const response = await client.post<{
+      report_id: number;
+      model: string;
+      advice: LlmProductAdvice;
+    }>(`/api/reports/${id}/generate-llm`, model ? { model } : {});
     return response.data;
   },
 };

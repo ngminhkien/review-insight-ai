@@ -61,8 +61,9 @@ class AnalyticsRequest(BaseModel):
 
 class InsightRequest(BaseModel):
     analytics: Dict[str, Any]
+    reviews: List[Dict[str, Any]] = Field(default_factory=list)
     use_llm: bool | None = False
-    llm_model: str | None = "gpt-4.1"
+    llm_model: str | None = None
 
 
 @app.get("/health")
@@ -136,6 +137,7 @@ def generate_insight(payload: InsightRequest) -> Dict[str, Any]:
     if payload.use_llm:
         response["llm_report"] = generate_llm_business_report(
             payload.analytics,
-            model=payload.llm_model or "gpt-4.1",
+            reviews=payload.reviews,
+            model=payload.llm_model,
         )
     return response

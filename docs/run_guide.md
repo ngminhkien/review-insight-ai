@@ -10,6 +10,23 @@ May can cai san:
 
 ## Chay toan bo he thong
 
+De dung nut nhan xet va de xuat bang LLM, tao file `.env` tai thu muc goc:
+
+```bash
+cp .env.example .env
+```
+
+Mo `.env` va dien OpenAI API key:
+
+```text
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-5.5
+```
+
+API key can co Billing/credits tren OpenAI API Platform. Goi ChatGPT Plus/Pro
+khong tu dong bao gom OpenAI API credits. Neu gap `insufficient_quota`, kiem tra
+Billing va Usage limits cua dung API project dang tao key.
+
 Tu thu muc goc `review-insight-ai`, chi chay mot lenh:
 
 ```bash
@@ -66,6 +83,13 @@ Mo ung dung:
 ```text
 http://127.0.0.1:5173
 ```
+
+Luong su dung:
+
+1. Upload CSV de model noi bo phan tich sentiment, aspect va priority.
+2. Mo report vua tao.
+3. Bam `Dua ra nhan xet va de xuat cho san pham`.
+4. LLM tao nhan xet theo tung `product_id` va luu ket qua vao report.
 
 ## Che do mock
 

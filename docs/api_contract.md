@@ -369,14 +369,53 @@ Response:
 }
 ```
 
-Neu bat LLM:
+Neu bat LLM, request co the gui them ket qua review da duoc model noi bo phan tich:
 
 ```json
 {
   "analytics": {},
+  "reviews": [
+    {
+      "product_id": "P001",
+      "review_text": "Poor packaging and broken item",
+      "sentiment": "negative",
+      "confidence": 0.91,
+      "aspects": ["quality"],
+      "priority": "high"
+    }
+  ],
   "use_llm": true,
-  "llm_model": "gpt-4.1"
+  "llm_model": "gpt-5.5"
 }
 ```
 
-Khi chua cau hinh `OPENAI_API_KEY`, `llm_report.enabled=false` va API van tra template insight binh thuong.
+Response LLM co cau truc:
+
+```json
+{
+  "llm_report": {
+    "enabled": true,
+    "provider": "openai",
+    "model": "gpt-5.5",
+    "advice": {
+      "executive_summary": "Tom tat cho quan ly.",
+      "key_findings": ["Phat hien chinh."],
+      "product_assessments": [
+        {
+          "product_id": "P001",
+          "product_type": "phone",
+          "overview": "Nhan xet tong quan.",
+          "strengths": ["Diem manh."],
+          "issues": ["Van de."],
+          "recommendations": ["De xuat hanh dong."]
+        }
+      ],
+      "priority_actions": ["Hanh dong uu tien."],
+      "limitations": ["Gioi han cua du lieu."]
+    }
+  }
+}
+```
+
+Khi chua cau hinh `OPENAI_API_KEY`, `llm_report.enabled=false` va API van tra
+template insight binh thuong.

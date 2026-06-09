@@ -79,9 +79,28 @@ final class Database
                 insights_json TEXT NOT NULL DEFAULT "[]",
                 recommendations_json TEXT NOT NULL DEFAULT "[]",
                 raw_response_json TEXT NOT NULL DEFAULT "{}",
+                llm_advice_json TEXT,
+                llm_model TEXT,
+                llm_generated_at TEXT,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(dataset_id) REFERENCES datasets(id) ON DELETE CASCADE
             )'
         );
+
+        $this->addColumnIfMissing('analysis_reports', 'llm_advice_json', 'TEXT');
+        $this->addColumnIfMissing('analysis_reports', 'llm_model', 'TEXT');
+        $this->addColumnIfMissing('analysis_reports', 'llm_generated_at', 'TEXT');
+    }
+
+    private function addColumnIfMissing(string $table, string $column, string $definition): void
+    {
+        $columns = $this->pdo->query("PRAGMA table_info({$table})")->fetchAll();
+        foreach ($columns as $existingColumn) {
+            if (($existingColumn['name'] ?? null) === $column) {
+                return;
+            }
+        }
+
+        $this->pdo->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$definition}");
     }
 }

@@ -45,6 +45,21 @@ final class AiServiceClient
     }
 
     /**
+     * @param array<string, mixed> $analytics
+     * @param array<int, array<string, mixed>> $reviews
+     * @return array<string, mixed>
+     */
+    public function generateProductAdvice(array $analytics, array $reviews, ?string $model = null): array
+    {
+        return $this->post('/generate-insight', [
+            'analytics' => $analytics,
+            'reviews' => $reviews,
+            'use_llm' => true,
+            'llm_model' => $model,
+        ]);
+    }
+
+    /**
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
@@ -155,7 +170,12 @@ final class AiServiceClient
     {
         $decoded = json_decode($responseBody, true);
         if (!is_array($decoded)) {
-            throw new AiServiceException('AI service returned invalid JSON.');
+            $preview = trim(substr($responseBody, 0, 300));
+            throw new AiServiceException(
+                'AI service returned invalid JSON'
+                . ($statusCode > 0 ? ' (HTTP ' . $statusCode . ')' : '')
+                . ($preview !== '' ? ': ' . $preview : '.')
+            );
         }
 
         if ($statusCode < 200 || $statusCode >= 300) {

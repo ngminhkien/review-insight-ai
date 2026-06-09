@@ -17,6 +17,9 @@
    * Thẻ nhận định thông minh (Insights) & Đề xuất hành động (Recommendations) tự động sinh từ AI.
    * Bảng lọc tương tác: Tìm kiếm và lọc danh sách đánh giá theo Sắc thái, Khía cạnh, Độ ưu tiên kèm phân trang.
    * Xem chi tiết từng review qua cửa sổ trượt (Drawer Detail).
+   * Sau khi model nội bộ phân tích thô, người dùng có thể chủ động bấm
+     **"Đưa ra nhận xét và đề xuất cho sản phẩm"** để gọi LLM, nhận đánh giá
+     theo từng mã sản phẩm và lưu kết quả vào báo cáo.
 
 3. **Lịch Sử Phân Tích (`/history` - HistoryPage):**
    * Liệt kê danh sách tất cả các tệp CSV đã tải lên hệ thống.

@@ -6,6 +6,7 @@ import { SentimentChart } from '../components/SentimentChart';
 import { AspectBarChart } from '../components/AspectBarChart';
 import { InsightCard } from '../components/InsightCard';
 import { RecommendationCard } from '../components/RecommendationCard';
+import { LlmAdvicePanel } from '../components/LlmAdvicePanel';
 import { ReviewTable } from '../components/ReviewTable';
 import { 
   MessageSquare, 
@@ -15,7 +16,8 @@ import {
   AlertTriangle, 
   FileSpreadsheet,
   RefreshCw,
-  Calendar
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -35,6 +37,8 @@ export const DashboardPage: React.FC = () => {
   const [globalStats, setGlobalStats] = useState<DashboardStats | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
+  const [llmLoading, setLlmLoading] = useState(false);
+  const [llmError, setLlmError] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -184,6 +188,33 @@ export const DashboardPage: React.FC = () => {
     setSearchParams({});
   };
 
+  const handleGenerateLlmAdvice = async () => {
+    if (!reportId) return;
+
+    setLlmLoading(true);
+    setLlmError(null);
+    try {
+      const result = await apiService.generateLlmAdvice(reportId);
+      setReport((current) => current ? {
+        ...current,
+        llm_advice: result.advice,
+        llm_model: result.model,
+        llm_generated_at: new Date().toISOString(),
+      } : current);
+    } catch (err: any) {
+      console.error(err);
+      const apiError = err.response?.data;
+      const detail = apiError?.details?.message;
+      setLlmError(
+        detail ? `${apiError.error} ${detail}` :
+        apiError?.error ||
+        'Không thể tạo nhận xét bằng LLM. Vui lòng kiểm tra cấu hình OpenAI API.'
+      );
+    } finally {
+      setLlmLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-3">
@@ -313,6 +344,47 @@ export const DashboardPage: React.FC = () => {
         <InsightCard insights={metrics.insights} />
         <RecommendationCard recommendations={metrics.recommendations} />
       </div>
+
+      {report && (
+        <section className="border-y border-white/10 py-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-bold text-gray-100 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-fuchsia-400" />
+                Phân tích chuyên sâu bằng LLM
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                LLM sử dụng kết quả phân tích thô ở trên để nhận xét và đề xuất theo từng sản phẩm.
+              </p>
+            </div>
+            <button
+              onClick={handleGenerateLlmAdvice}
+              disabled={llmLoading}
+              className="min-h-10 px-4 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 disabled:opacity-60 disabled:cursor-wait text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors"
+            >
+              {llmLoading ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              {report.llm_advice ? 'Tạo lại nhận xét và đề xuất' : 'Đưa ra nhận xét và đề xuất cho sản phẩm'}
+            </button>
+          </div>
+          {llmError && (
+            <div className="mt-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300">
+              {llmError}
+            </div>
+          )}
+        </section>
+      )}
+
+      {report?.llm_advice && (
+        <LlmAdvicePanel
+          advice={report.llm_advice}
+          model={report.llm_model}
+          generatedAt={report.llm_generated_at}
+        />
+      )}
 
       {/* Section: Reviews List */}
       <div className="space-y-4">
