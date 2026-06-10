@@ -1,6 +1,10 @@
 from collections import Counter
 from typing import List, Dict, Any, Optional
 
+from sklearn.feature_extraction.text import HashingVectorizer
+from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+import numpy as np
 import joblib
 import numpy as np
 from sklearn.calibration import CalibratedClassifierCV
@@ -203,75 +207,53 @@ def _smote_resample(
     return x_new, y_new
 
 
-def train_model(
-    texts: List[str],
-    labels: List[str],
-    model_name: str = "logreg",
-    test_size: float = 0.2,
-    random_state: int = 42,
-    oversample_neutral: bool = False,
-    neutral_weight_boost: float = 2.5,
-    use_char_ngram: bool = True,
-) -> Dict[str, Any]:
-    """
-    Train sentiment classifier và trả về evaluation report.
-
-    Cải tiến so với version cũ:
-    - SMOTE thay RandomOverSampler (tạo synthetic thay vì duplicate)
-    - neutral_weight_boost: tăng sample_weight cho neutral lên 2.5x
-    - use_char_ngram: kết hợp word + char n-gram
-    - SVM có CalibratedClassifierCV → predict_proba chính xác hơn
-    - LogReg dùng multinomial solver
-    """
-    unique_labels = set(labels)
-    if len(unique_labels) < 2:
-        raise ValueError("Need at least 2 sentiment classes to train model")
-
-    x_train, x_test, y_train, y_test = train_test_split(
-        texts,
-        labels,
-        test_size=test_size,
-        random_state=random_state,
-        stratify=labels,
+def train_model(texts, labels, use_char_ngram=True, neutral_boost=3.5, **kwargs):
+    print("\n1. Khởi tạo HashingVectorizer (Chống tràn RAM cực mạnh)...")
+    analyzer = 'char_wb' if use_char_ngram else 'word'
+    vectorizer = HashingVectorizer(
+        analyzer=analyzer, 
+        ngram_range=(1, 3), 
+        n_features=50000  # Giới hạn 50.000 từ/cụm từ quan trọng nhất
     )
-
-    # --- Resampling ---
-    if oversample_neutral:
-        x_train, y_train = _smote_resample(x_train, y_train, random_state=random_state)
-
-    # --- Build & fit ---
-    model = build_pipeline(
-        model_name=model_name,
-        use_char_ngram=use_char_ngram,
-    )
-
-    fit_params: Dict[str, Any] = {}
-    if model_name == "nb":
-        # NB cần sample_weight qua fit_params
-        fit_params["clf__sample_weight"] = compute_sample_weight("balanced", y=y_train)
-    else:
-        # Với LogReg và SVM (qua CalibratedClassifierCV), boost neutral weight
-        if "neutral" in unique_labels:
-            fit_params["clf__sample_weight"] = _compute_neutral_weight_boost(
-                y_train, neutral_boost=neutral_weight_boost
-            )
-
-    model.fit(x_train, y_train, **fit_params)
-    y_pred = model.predict(x_test)
-
-    # --- Report ---
-    report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
-    report["model_name"] = model_name
-    report["oversample_neutral"] = oversample_neutral
-    report["neutral_weight_boost"] = neutral_weight_boost
-    report["use_char_ngram"] = use_char_ngram
-    report["accuracy_score"] = accuracy_score(y_test, y_pred)
-    report["confusion_matrix"] = confusion_matrix(y_test, y_pred).tolist()
-    report["class_distribution_train"] = dict(Counter(y_train))
-    report["class_distribution_test"] = dict(Counter(y_test))
-
-    save_model(model)
-    return {"model": model, "report": report}
+    
+    print("2. Khởi tạo thuật toán SGD (Linear SVM hỗ trợ học từng phần)...")
+    # Thay vì dùng SMOTE (sinh dữ liệu) gây nổ RAM, ta áp dụng trọng số phạt cực nặng cho lớp Neutral
+    class_weight = {'positive': 1.0, 'negative': 1.0, 'neutral': float(neutral_boost)}
+    model = SGDClassifier(loss='hinge', class_weight=class_weight, random_state=42)
+    
+    # Định nghĩa trước 3 nhãn để mô hình không bỡ ngỡ khi học batch đầu tiên
+    classes = np.array(['negative', 'neutral', 'positive'])
+    
+    batch_size = 50000
+    total_samples = len(texts)
+    
+    print(f"3. Bắt đầu huấn luyện {total_samples} dòng dữ liệu theo từng Batch...")
+    for i in range(0, total_samples, batch_size):
+        batch_texts = texts[i : i + batch_size]
+        batch_labels = labels[i : i + batch_size]
+        
+        # Biến chữ thành số (Chỉ 50.000 dòng 1 lúc nên rất nhẹ)
+        X_batch = vectorizer.transform(batch_texts)
+        
+        # HỌC CẬP NHẬT DẦN (Cốt lõi của Out-of-core Learning)
+        model.partial_fit(X_batch, batch_labels, classes=classes)
+        print(f"   -> Đã học xong batch: {min(i + batch_size, total_samples)} / {total_samples}")
+        
+    print("4. Đang đánh giá mô hình (Cũng chạy theo Batch để tiết kiệm RAM)...")
+    y_pred = []
+    for i in range(0, total_samples, batch_size):
+        batch_texts = texts[i : i + batch_size]
+        X_batch = vectorizer.transform(batch_texts)
+        y_pred.extend(model.predict(X_batch))
+        
+    report = classification_report(labels, y_pred, output_dict=True)
+    report["confusion_matrix"] = confusion_matrix(labels, y_pred).tolist()
+    
+    return {
+        "vectorizer": vectorizer,
+        "model": model,
+        "report": report
+    }
 
 
 def cross_validate_model(
