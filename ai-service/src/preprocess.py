@@ -26,6 +26,85 @@ EMOJI_PATTERN = re.compile(
 # Không xoá negation (no, not, never, don't, etc.) vì rất quan trọng cho sentiment
 _NEGATION_SAFE = True  # reminder: không xoá "not", "no", "never"
 
+CONTRACTION_MAP: Dict[str, str] = {
+    "don't": "do not",
+    "dont": "do not",
+    "can't": "cannot",
+    "cant": "cannot",
+    "won't": "will not",
+    "wont": "will not",
+    "shouldn't": "should not",
+    "shouldnt": "should not",
+    "couldn't": "could not",
+    "couldnt": "could not",
+    "wouldn't": "would not",
+    "wouldnt": "would not",
+    "wasn't": "was not",
+    "wasnt": "was not",
+    "weren't": "were not",
+    "werent": "were not",
+    "isn't": "is not",
+    "isnt": "is not",
+    "aren't": "are not",
+    "arent": "are not",
+    "haven't": "have not",
+    "havent": "have not",
+    "hasn't": "has not",
+    "hasnt": "has not",
+    "didn't": "did not",
+    "didnt": "did not",
+    "doesn't": "does not",
+    "doesnt": "does not",
+    "i'm": "i am",
+    "im": "i am",
+    "it's": "it is",
+    "you're": "you are",
+    "they're": "they are",
+    "we're": "we are",
+    "u": "you",
+    "r": "are",
+    "gr8": "great",
+    "awsm": "awesome",
+    "w/o": "without",
+    "w/": "with",
+    "k": "ok",
+    "okay": "ok",
+}
+
+NEGATION_WORDS = {"not", "no", "never", "none", "without", "lack"}
+
+
+def expand_contractions(text: str) -> str:
+    """Expand common English contractions and slangs."""
+    words = text.split()
+    expanded = []
+    for word in words:
+        cleaned_word = word.lower().strip(".,!?\"'")
+        expanded_word = CONTRACTION_MAP.get(cleaned_word, word)
+        expanded.append(expanded_word)
+    return " ".join(expanded)
+
+
+def handle_negation(text: str) -> str:
+    """
+    Kết hợp từ phủ định với từ tiếp theo để tránh trích xuất đặc trưng rời rạc.
+    Ví dụ: "not good" -> "not_good", "no issues" -> "no_issues"
+    """
+    words = text.split()
+    new_words = []
+    i = 0
+    n = len(words)
+    while i < n:
+        word = words[i]
+        if word in NEGATION_WORDS and i + 1 < n:
+            next_word = words[i+1]
+            new_words.append(f"{word}_{next_word}")
+            i += 2
+        else:
+            new_words.append(word)
+            i += 1
+    return " ".join(new_words)
+
 
 def remove_emoji(text: str) -> str:
     """Remove emoji; thay bằng khoảng trắng để không ghép từ liền nhau."""
@@ -88,17 +167,19 @@ def clean_text(text: Any, extract_signals: bool = True) -> str:
     Clean raw review text cho ML.
 
     Quy trình:
-    1. Lowercase
+    1. Lowercase & Expand Contractions
     2. Remove emoji
     3. Extract sentiment signals (trước khi xoá punctuation)
     4. Remove HTML/URL noise
     5. Normalize repeated chars
     6. Remove punctuation
     7. Normalize whitespace
+    8. Negation handling
     """
     if text is None:
         return ""
     text = str(text).lower()
+    text = expand_contractions(text)
     text = remove_emoji(text)
 
     # Extract signals TRƯỚC khi lowercase punctuation bị xoá
@@ -111,6 +192,8 @@ def clean_text(text: Any, extract_signals: bool = True) -> str:
     text = normalize_repeated_chars(text)
     text = remove_punctuation(text)
     text = re.sub(r"\s+", " ", text).strip()
+    
+    text = handle_negation(text)
     return text
 
 

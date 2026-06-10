@@ -5,6 +5,8 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
@@ -94,6 +96,11 @@ def main() -> None:
         default=5,
         help="Số folds cho cross-validation (default: 5)",
     )
+    parser.add_argument(
+        "--model-path",
+        default=None,
+        help="Đường dẫn đầu ra cho file model pkl (ví dụ: models/sentiment_model_v2.pkl)",
+    )
     args = parser.parse_args()
 
     csv_path = Path(args.data)
@@ -182,6 +189,7 @@ def main() -> None:
 
     # --- Train final model ---
     print(f"\nTraining final model: {args.model} | char_ngram={use_char} | neutral_boost={args.neutral_boost}")
+    model_output_path = Path(args.model_path) if args.model_path else None
     result = train_model(
         texts,
         labels,
@@ -189,6 +197,7 @@ def main() -> None:
         oversample_neutral=args.oversample_neutral,
         neutral_weight_boost=args.neutral_boost,
         use_char_ngram=use_char,
+        model_path=model_output_path,
     )
 
     report = result["report"]

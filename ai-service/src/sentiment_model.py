@@ -1,5 +1,6 @@
 from collections import Counter
 from typing import List, Dict, Any, Optional
+from pathlib import Path
 
 import joblib
 import numpy as np
@@ -62,7 +63,6 @@ def _build_classifier(model_name: str, calibrate: bool = False):
             C=1.0,
             class_weight="balanced",
             solver="lbfgs",
-            multi_class="multinomial",
         )
         return CalibratedClassifierCV(clf, cv=3) if calibrate else clf
 
@@ -212,6 +212,7 @@ def train_model(
     oversample_neutral: bool = False,
     neutral_weight_boost: float = 2.5,
     use_char_ngram: bool = True,
+    model_path: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """
     Train sentiment classifier và trả về evaluation report.
@@ -270,7 +271,7 @@ def train_model(
     report["class_distribution_train"] = dict(Counter(y_train))
     report["class_distribution_test"] = dict(Counter(y_test))
 
-    save_model(model)
+    save_model(model, model_path=model_path)
     return {"model": model, "report": report}
 
 
@@ -326,18 +327,23 @@ def cross_validate_model(
     }
 
 
-def save_model(model: Pipeline) -> None:
+def save_model(model: Pipeline, model_path: Optional[Path] = None) -> None:
     """Save whole pipeline. Lưu thêm vectorizer riêng nếu cần."""
-    SENTIMENT_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(model, SENTIMENT_MODEL_PATH)
+    m_path = model_path or SENTIMENT_MODEL_PATH
+    m_path.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model, m_path)
+    
+    # Xác định đường dẫn vectorizer dựa trên m_path
+    v_path = m_path.parent / (m_path.stem.replace("model", "vectorizer") + ".pkl")
+    
     # Với FeatureUnion pipeline, lưu cả hai vectorizer
     if "features" in model.named_steps:
         fu = model.named_steps["features"]
         for name, transformer in fu.transformer_list:
-            path = TFIDF_VECTORIZER_PATH.with_stem(f"{TFIDF_VECTORIZER_PATH.stem}_{name}")
+            path = v_path.with_stem(f"{v_path.stem}_{name}")
             joblib.dump(transformer, path)
     elif "tfidf" in model.named_steps:
-        joblib.dump(model.named_steps["tfidf"], TFIDF_VECTORIZER_PATH)
+        joblib.dump(model.named_steps["tfidf"], v_path)
 
 
 _MODEL_CACHE = None
