@@ -8,23 +8,46 @@ May can cai san:
 - Node.js 18+ va npm.
 - Python 3.
 
-## Chay toan bo he thong
+## Cau hinh Gemini API key
 
-De dung nut nhan xet va de xuat bang LLM, tao file `.env` tai thu muc goc:
+Project co the dung chung mot Gemini API key cho cac thanh vien khi demo hoac
+phat trien noi bo. Khong ghi API key that vao source code, `.env.example`,
+GitHub issue, pull request hoac commit.
+
+Nguoi quan ly project:
+
+1. Tao mot API key rieng cho project tai Google AI Studio.
+2. Gui key cho thanh vien qua password manager cua nhom hoac kenh rieng.
+3. Theo doi quota cua key chung va thu hoi/tao key moi neu key bi lo hoac co
+   thanh vien roi nhom.
+
+Moi thanh vien clone project xong chay:
 
 ```bash
 cp .env.example .env
 ```
 
-Mo `.env` va dien Gemini API key:
+Sau do mo file `.env` tai thu muc goc va dan cung API key duoc nhom cung cap:
 
 ```text
-GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEY=AIza...key_cua_nhom
 GEMINI_MODEL=gemini-2.5-flash
 ```
 
-Tao API key tai Google AI Studio. Neu gap loi quota, kiem tra rate limit va
-billing cua Google Cloud project gan voi API key.
+File `.env` da nam trong `.gitignore`, vi vay moi thanh vien co mot ban cau hinh
+cuc bo va key khong duoc dua len Git. Co the kiem tra bang:
+
+```bash
+git check-ignore .env
+```
+
+Lenh phai in ra `.env`. Khong dung `git add -f .env`.
+
+Mot key chung se dung chung quota va kho tach usage theo tung thanh vien. Cach
+nay phu hop cho demo/nhom nho; voi production nen cap key rieng theo moi truong
+va luu key trong secret manager.
+
+## Chay toan bo he thong
 
 Tu thu muc goc `review-insight-ai`, chi chay mot lenh:
 
