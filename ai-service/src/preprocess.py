@@ -26,7 +26,25 @@ EMOJI_PATTERN = re.compile(
 # Không xoá negation (no, not, never, don't, etc.) vì rất quan trọng cho sentiment
 _NEGATION_SAFE = True  # reminder: không xoá "not", "no", "never"
 
-
+def handle_negation(texts):
+    print("-> Đang xử lý ghép từ phủ định (Negation Handling)...")
+    
+    # Danh sách các từ phủ định phổ biến trong tiếng Việt
+    negation_words = r'\b(không|chưa|chẳng|đếch|kém)\s+(\w+)\b'
+    
+    processed_texts = []
+    for text in texts:
+        # Chuyển văn bản về chữ thường (nếu chưa làm)
+        text = str(text).lower()
+        
+        # Biến "không tốt" thành "không_tốt", "chưa đẹp" thành "chưa_đẹp"
+        # \1 là nhóm 1 (từ phủ định), \2 là nhóm 2 (từ đi kèm ngay sau đó)
+        text_with_negation = re.sub(negation_words, r'\1_\2', text)
+        
+        processed_texts.append(text_with_negation)
+        
+    return processed_texts
+ 
 def remove_emoji(text: str) -> str:
     """Remove emoji; thay bằng khoảng trắng để không ghép từ liền nhau."""
     return EMOJI_PATTERN.sub(" ", text)

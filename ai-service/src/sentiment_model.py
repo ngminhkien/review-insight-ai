@@ -6,7 +6,7 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 import numpy as np
 import joblib
-import numpy as np
+import re
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -206,8 +206,24 @@ def _smote_resample(
     y_new = list(y_train) + ["neutral"] * len(synthetic_texts)
     return x_new, y_new
 
+def handle_negation(texts):
+    print("-> Đang xử lý ghép từ phủ định (English Negation Handling)...")
+    
+    # Danh sách các từ phủ định phổ biến trong tiếng Anh
+    negation_words = r"\b(not|never|no|cannot|can't|don't|doesn't|didn't|isn't|aren't|wasn't|weren't|hasn't|haven't|hadn't|won't|wouldn't)\s+(\w+)\b"
+    
+    processed_texts = []
+    for text in texts:
+        text = str(text).lower()
+        # Nối từ: "not good" -> "not_good", "doesn't work" -> "doesn't_work"
+        text_with_negation = re.sub(negation_words, r'\1_\2', text)
+        processed_texts.append(text_with_negation)
+        
+    return processed_texts
 
 def train_model(texts, labels, use_char_ngram=True, neutral_boost=2.0, **kwargs):
+    #Gọi hàm nối từ phủ định ngay đầu tiên
+    texts = handle_negation(texts)
     print("\n1. Khởi tạo TfidfVectorizer (Bộ não ngôn ngữ sắc bén)...")
     analyzer = 'char_wb' if use_char_ngram else 'word'
     vectorizer = TfidfVectorizer(
