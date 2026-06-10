@@ -1,4 +1,7 @@
+from src import insight_generator
 from src.insight_generator import (
+    ProductAdvice,
+    ProductAssessment,
     build_llm_context,
     generate_executive_report,
     generate_llm_business_report,
@@ -74,9 +77,45 @@ def test_llm_context_groups_reviews_by_product():
 
 
 def test_llm_report_is_disabled_without_api_key(monkeypatch):
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
 
     result = generate_llm_business_report({"total_reviews": 0})
 
     assert result["enabled"] is False
-    assert result["reason"] == "OPENAI_API_KEY is not set"
+    assert result["provider"] == "google"
+    assert result["reason"] == "GEMINI_API_KEY is not set"
+
+
+def test_llm_report_uses_gemini_structured_output(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-test")
+
+    def fake_request(api_key, model, prompt):
+        assert api_key == "test-key"
+        assert model == "gemini-test"
+        assert "Du lieu:" in prompt
+        return ProductAdvice(
+            executive_summary="Tong quan",
+            key_findings=["Chat luong can cai thien"],
+            product_assessments=[
+                ProductAssessment(
+                    product_id="P001",
+                    overview="Can theo doi",
+                    issues=["Chat luong"],
+                    recommendations=["Kiem tra dau ra"],
+                )
+            ],
+            priority_actions=["Kiem tra P001"],
+        )
+
+    monkeypatch.setattr(insight_generator, "_request_gemini_advice", fake_request)
+
+    result = generate_llm_business_report(
+        {"total_reviews": 1},
+        [{"product_id": "P001", "sentiment": "negative"}],
+    )
+
+    assert result["enabled"] is True
+    assert result["provider"] == "google"
+    assert result["model"] == "gemini-test"
+    assert result["advice"]["product_assessments"][0]["product_id"] == "P001"

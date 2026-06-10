@@ -208,7 +208,7 @@ export const DashboardPage: React.FC = () => {
       setLlmError(
         detail ? `${apiError.error} ${detail}` :
         apiError?.error ||
-        'Không thể tạo nhận xét bằng LLM. Vui lòng kiểm tra cấu hình OpenAI API.'
+        'Không thể tạo nhận xét bằng LLM. Vui lòng kiểm tra cấu hình Gemini API.'
       );
     } finally {
       setLlmLoading(false);

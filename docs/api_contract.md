@@ -326,7 +326,7 @@ Dung khi Backend da co analytics va chi muon AI service sinh insight/recommendat
 
 Version 1 mac dinh la template-based, khong can API key.
 
-Version 2 optional dung LLM API khi `use_llm=true` va server co `OPENAI_API_KEY`.
+Version 2 optional dung LLM API khi `use_llm=true` va server co `GEMINI_API_KEY`.
 
 Request:
 
@@ -385,7 +385,7 @@ Neu bat LLM, request co the gui them ket qua review da duoc model noi bo phan ti
     }
   ],
   "use_llm": true,
-  "llm_model": "gpt-5.5"
+  "llm_model": "gemini-2.5-flash"
 }
 ```
 
@@ -395,8 +395,8 @@ Response LLM co cau truc:
 {
   "llm_report": {
     "enabled": true,
-    "provider": "openai",
-    "model": "gpt-5.5",
+    "provider": "google",
+    "model": "gemini-2.5-flash",
     "advice": {
       "executive_summary": "Tom tat cho quan ly.",
       "key_findings": ["Phat hien chinh."],
@@ -417,5 +417,5 @@ Response LLM co cau truc:
 }
 ```
 
-Khi chua cau hinh `OPENAI_API_KEY`, `llm_report.enabled=false` va API van tra
+Khi chua cau hinh `GEMINI_API_KEY`, `llm_report.enabled=false` va API van tra
 template insight binh thuong.

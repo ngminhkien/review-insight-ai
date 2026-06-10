@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
@@ -27,6 +27,11 @@ class ProductAdvice(BaseModel):
     product_assessments: List[ProductAssessment] = Field(default_factory=list)
     priority_actions: List[str] = Field(default_factory=list)
     limitations: List[str] = Field(default_factory=list)
+
+
+class GeminiResponseError(RuntimeError):
+    pass
+
 
 def _top_aspect(aspects: Any) -> Tuple[str | None, int]:
     if isinstance(aspects, dict) and aspects:
@@ -194,107 +199,135 @@ Du lieu:
 """.strip()
 
 
+def _request_gemini_advice(
+    api_key: str,
+    model: str,
+    prompt: str,
+) -> ProductAdvice:
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=api_key)
+    try:
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=(
+                    "Ban la chuyen gia product analytics. Hay bien ket qua model "
+                    "phan tich review thanh nhan xet va de xuat co bang chung."
+                ),
+                response_mime_type="application/json",
+                response_schema=ProductAdvice,
+                temperature=0.2,
+            ),
+        )
+
+        try:
+            if isinstance(response.parsed, ProductAdvice):
+                return response.parsed
+            if response.parsed is not None:
+                return ProductAdvice.model_validate(response.parsed)
+            if response.text:
+                return ProductAdvice.model_validate_json(response.text)
+        except ValidationError as exc:
+            raise GeminiResponseError(
+                "Gemini returned data that does not match the product advice schema."
+            ) from exc
+
+        raise GeminiResponseError(
+            "Gemini did not return a structured product advice response."
+        )
+    finally:
+        client.close()
+
+
+def _gemini_error_response(model: str, exc: Exception) -> Dict[str, Any]:
+    status_code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
+    try:
+        status_code = int(status_code) if status_code is not None else None
+    except (TypeError, ValueError):
+        status_code = None
+
+    if status_code in {401, 403}:
+        reason = "GEMINI_API_KEY khong hop le, bi thu hoi hoac khong co quyen truy cap."
+        error_code = "authentication_error"
+    elif status_code == 404:
+        reason = f"Model {model} khong ton tai hoac API key khong co quyen truy cap."
+        error_code = "model_not_found"
+    elif status_code == 429:
+        reason = "Gemini API da vuot quota hoac dang gioi han toc do. Hay thu lai sau."
+        error_code = "rate_limit"
+    elif status_code == 400:
+        reason = "Gemini API tu choi request. Hay kiem tra model va du lieu dau vao."
+        error_code = "bad_request"
+    elif status_code is not None and status_code >= 500:
+        reason = "Gemini API dang tam thoi gian doan. Hay thu lai sau."
+        error_code = "service_error"
+    else:
+        reason = "Khong the ket noi toi Gemini API. Hay kiem tra Internet va thu lai."
+        error_code = "connection_error"
+
+    return {
+        "enabled": False,
+        "provider": "google",
+        "model": model,
+        "reason": reason,
+        "error_code": error_code,
+    }
+
+
 def generate_llm_business_report(
     stats: Dict[str, Any],
     reviews: List[Dict[str, Any]] | None = None,
     model: str | None = None,
 ) -> Dict[str, Any]:
     """
-    Generate insight report with OpenAI Responses API when OPENAI_API_KEY is set.
+    Generate an insight report with Gemini when GEMINI_API_KEY is set.
 
     The project still works without an API key because template-based insights are
     the default implementation for demo and local testing.
     """
     context = build_llm_context(stats, reviews)
-    selected_model = model or os.getenv("OPENAI_MODEL") or "gpt-5.5"
+    selected_model = model or os.getenv("GEMINI_MODEL") or "gemini-2.5-flash"
+    api_key = os.getenv("GEMINI_API_KEY")
 
-    if not os.getenv("OPENAI_API_KEY"):
+    if not api_key:
         return {
             "enabled": False,
-            "provider": "openai",
-            "reason": "OPENAI_API_KEY is not set",
+            "provider": "google",
+            "reason": "GEMINI_API_KEY is not set",
             "model": selected_model,
         }
 
-    from openai import (
-        APIConnectionError,
-        AuthenticationError,
-        BadRequestError,
-        NotFoundError,
-        OpenAI,
-        RateLimitError,
-    )
-
-    client = OpenAI()
     try:
-        response = client.responses.parse(
+        advice = _request_gemini_advice(
+            api_key=api_key,
             model=selected_model,
-            input=[
-                {
-                    "role": "developer",
-                    "content": (
-                        "Ban la chuyen gia product analytics. Hay bien ket qua model "
-                        "phan tich review thanh nhan xet va de xuat co bang chung."
-                    ),
-                },
-                {"role": "user", "content": generate_llm_prompt(context)},
-            ],
-            text_format=ProductAdvice,
+            prompt=generate_llm_prompt(context),
         )
-    except AuthenticationError:
+    except ImportError:
         return {
             "enabled": False,
-            "provider": "openai",
+            "provider": "google",
             "model": selected_model,
-            "reason": "OPENAI_API_KEY khong hop le hoac da bi thu hoi.",
-            "error_code": "authentication_error",
+            "reason": "Chua cai package google-genai cho AI service.",
+            "error_code": "dependency_error",
         }
-    except RateLimitError as exc:
-        error_code = getattr(exc, "code", None) or "rate_limit"
-        reason = (
-            "OpenAI API project da het quota. Hay kiem tra Billing, credits va usage limits."
-            if error_code == "insufficient_quota"
-            else "OpenAI dang gioi han toc do request. Hay thu lai sau."
-        )
+    except GeminiResponseError:
         return {
             "enabled": False,
-            "provider": "openai",
+            "provider": "google",
             "model": selected_model,
-            "reason": reason,
-            "error_code": error_code,
+            "reason": "Gemini khong tra ve dung cau truc nhan xet san pham.",
+            "error_code": "invalid_response",
         }
-    except NotFoundError:
-        return {
-            "enabled": False,
-            "provider": "openai",
-            "model": selected_model,
-            "reason": f"Model {selected_model} khong ton tai hoac API project khong co quyen truy cap.",
-            "error_code": "model_not_found",
-        }
-    except BadRequestError as exc:
-        return {
-            "enabled": False,
-            "provider": "openai",
-            "model": selected_model,
-            "reason": f"OpenAI tu choi request: {exc.message}",
-            "error_code": "bad_request",
-        }
-    except APIConnectionError:
-        return {
-            "enabled": False,
-            "provider": "openai",
-            "model": selected_model,
-            "reason": "Khong the ket noi toi OpenAI API. Hay kiem tra Internet va thu lai.",
-            "error_code": "connection_error",
-        }
-
-    parsed = response.output_parsed
-    if parsed is None:
-        raise RuntimeError("OpenAI did not return a structured product advice response.")
+    except Exception as exc:
+        return _gemini_error_response(selected_model, exc)
 
     return {
         "enabled": True,
-        "provider": "openai",
+        "provider": "google",
         "model": selected_model,
-        "advice": parsed.model_dump(),
+        "advice": advice.model_dump(),
     }

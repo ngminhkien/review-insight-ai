@@ -16,16 +16,15 @@ De dung nut nhan xet va de xuat bang LLM, tao file `.env` tai thu muc goc:
 cp .env.example .env
 ```
 
-Mo `.env` va dien OpenAI API key:
+Mo `.env` va dien Gemini API key:
 
 ```text
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=gpt-5.5
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
-API key can co Billing/credits tren OpenAI API Platform. Goi ChatGPT Plus/Pro
-khong tu dong bao gom OpenAI API credits. Neu gap `insufficient_quota`, kiem tra
-Billing va Usage limits cua dung API project dang tao key.
+Tao API key tai Google AI Studio. Neu gap loi quota, kiem tra rate limit va
+billing cua Google Cloud project gan voi API key.
 
 Tu thu muc goc `review-insight-ai`, chi chay mot lenh:
 

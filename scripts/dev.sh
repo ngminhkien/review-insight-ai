@@ -110,7 +110,7 @@ elif [ "$AI_MODE" = "real" ]; then
   if [ ! -f "$AI_REQUIREMENTS_STAMP" ] \
     || [ "$ROOT_DIR/ai-service/requirements.txt" -nt "$AI_REQUIREMENTS_STAMP" ] \
     || ! "$ROOT_DIR/ai-service/.venv/bin/python" -c \
-    'import fastapi, uvicorn, pandas, numpy, sklearn, imblearn, joblib, dotenv, pydantic, openai' \
+    'import fastapi, uvicorn, pandas, numpy, sklearn, imblearn, joblib, dotenv, pydantic; from google import genai' \
     >/dev/null 2>&1; then
     printf 'Installing AI service dependencies...\n'
     "$ROOT_DIR/ai-service/.venv/bin/python" -m pip install -r "$ROOT_DIR/ai-service/requirements.txt" || exit 1

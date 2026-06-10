@@ -8,6 +8,6 @@ joblib
 python-dotenv
 pydantic
 matplotlib
-openai
+google-genai
 seaborn
 pytest

@@ -211,10 +211,10 @@ curl http://localhost:8080/api/reports/1
 
 ### `POST /api/reports/{id}/generate-llm`
 
-Lay analytics va ket qua model tho cua report, goi OpenAI LLM de tao nhan xet
+Lay analytics va ket qua model tho cua report, goi Gemini LLM de tao nhan xet
 va de xuat theo tung san pham. Ket qua duoc luu vao report.
 
-Can cau hinh `OPENAI_API_KEY` trong file `.env` tai thu muc goc project.
+Can cau hinh `GEMINI_API_KEY` trong file `.env` tai thu muc goc project.
 
 ```bash
 curl -X POST http://localhost:8080/api/reports/1/generate-llm \

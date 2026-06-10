@@ -185,8 +185,8 @@ HTML;
         $llmReport = $llmResponse['llm_report'] ?? null;
 
         if (!is_array($llmReport) || ($llmReport['enabled'] ?? false) !== true) {
-            Response::error('OpenAI LLM is not configured.', 422, [
-                'message' => $llmReport['reason'] ?? 'Set OPENAI_API_KEY and restart the services.',
+            Response::error('Gemini LLM is not configured.', 422, [
+                'message' => $llmReport['reason'] ?? 'Set GEMINI_API_KEY and restart the services.',
             ]);
             exit;
         }
