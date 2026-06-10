@@ -1,65 +1,51 @@
 {
   "negative": {
-    "precision": 0.9067305713193566,
-    "recall": 0.7710984971618614,
-    "f1-score": 0.8334324324324325,
-    "support": 79982.0
+    "precision": 0.8323125369422987,
+    "recall": 0.8169049303963172,
+    "f1-score": 0.8245367618571675,
+    "support": 399907.0
   },
   "neutral": {
-    "precision": 0.558643388666285,
-    "recall": 0.8190935795216114,
-    "f1-score": 0.6642504679258124,
-    "support": 47660.0
+    "precision": 0.6086988555430031,
+    "recall": 0.6240505585443437,
+    "f1-score": 0.6162791179554337,
+    "support": 238298.0
   },
   "positive": {
-    "precision": 0.9507306796268016,
-    "recall": 0.8531915532125601,
-    "f1-score": 0.8993241177152859,
-    "support": 99967.0
+    "precision": 0.8794562964233913,
+    "recall": 0.8819072655831113,
+    "f1-score": 0.8806800757193589,
+    "support": 499836.0
   },
-  "accuracy": 0.8172040648656248,
+  "accuracy": 0.8050720492495438,
   "macro avg": {
-    "precision": 0.8053682132041478,
-    "recall": 0.8144612099653443,
-    "f1-score": 0.7990023393578437,
-    "support": 227609.0
+    "precision": 0.773489229636231,
+    "recall": 0.7742875848412574,
+    "f1-score": 0.77383198517732,
+    "support": 1138041.0
   },
   "weighted avg": {
-    "precision": 0.8531682064828385,
-    "recall": 0.8172040648656248,
-    "f1-score": 0.8269466681361414,
-    "support": 227609.0
+    "precision": 0.8061952486494358,
+    "recall": 0.8050720492495438,
+    "f1-score": 0.8055875934187079,
+    "support": 1138041.0
   },
-  "model_name": "svm",
-  "oversample_neutral": false,
-  "neutral_weight_boost": 1.5,
-  "use_char_ngram": true,
-  "accuracy_score": 0.8172040648656248,
+  "accuracy_score": 0.8050720492495438,
   "confusion_matrix": [
     [
-      61674,
-      17257,
-      1051
+      326686,
+      53369,
+      19852
     ],
     [
-      5253,
-      39038,
-      3369
+      49020,
+      148710,
+      40568
     ],
     [
-      1091,
-      13585,
-      85291
+      16798,
+      42229,
+      440809
     ]
-  ],
-  "class_distribution_train": {
-    "positive": 399869,
-    "negative": 319925,
-    "neutral": 190638
-  },
-  "class_distribution_test": {
-    "negative": 79982,
-    "positive": 99967,
-    "neutral": 47660
-  }
+  ]
 }

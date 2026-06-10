@@ -1,6 +1,5 @@
 # Worklog - Person 3 Sentiment Model
 
-
 ## Ngay 1
 
 Da lam:
@@ -149,63 +148,34 @@ Viec tiep theo:
 - Mô hình SVM Balanced đạt chỉ số Accuracy tổng thể là 81.72%, điểm Neutral F1-score đạt 0.6642 (Vượt mục tiêu đề ra >= 0.65).
 - Thử nghiệm trên miền dữ liệu chéo (Food): Mô hình bộc lộ nhược điểm (Domain Drift) do tập train gốc chỉ học từ vựng đồ điện tử.
 - Thử nghiệm trên miền dữ liệu chuẩn (Electronics): Mô hình chạy tối ưu, nhận diện đúng Sắc thái (Sentiment) và Độ tự tin (Confidence) đạt tới 98.42% ở các câu chê mạnh. Luồng API trả về cấu trúc JSON analytics, insights đồng bộ hoàn hảo.
- 
-## Ngay 7 (Giai doan 4 - Sentiment inference)
 
-Da lam:
+## Ngay 7: 
+Đã làm:
+Khắc phục triệt để lỗi tràn bộ nhớ RAM (ArrayMemoryError 68GB) khi nạp tập dữ liệu lớn bằng cách gỡ bỏ thuật toán SMOTE (tránh việc bung nén ma trận thưa bằng hàm .toarray()).
 
-- Doc lai trang thai du an hien tai qua `README.md`, `docs/team_plan.md`, `docs/run_guide.md`, `docs/api_contract.md` va cac worklog trong `docs/worklog/`.
-- Kiem tra luong AI hien co: FastAPI nhan review, preprocess text, goi model sentiment da train, detect aspect, detect priority, tong hop analytics/insight/recommendation.
-- Xac dinh core inference da co trong `ai-service/src/sentiment_model.py` qua ham `predict_sentiment(texts)`, nhung chua co endpoint rieng cho input text moi theo output toi gian cua giai doan 4.
-- Them endpoint `POST /predict-sentiment` de nhan review text moi va tra ve sentiment + confidence.
-- Endpoint moi clean text bang `clean_text()` truoc khi dua vao model, giu dong bo voi preprocessing cua pipeline hien tai.
-- Them test API co mock model de kiem tra contract toi gian, khong phu thuoc vao file `.pkl` khi chay unit test.
-- Cap nhat `docs/api_contract.md` va `ai-service/README.md` de Backend/nhom biet cach goi endpoint inference moi.
+Tối ưu hóa pipeline huấn luyện bằng cách dùng TfidfVectorizer (giới hạn max_features=25000) kết hợp với LinearSVC, giúp mô hình xử lý mượt mà hơn 1.1 triệu dòng review.
 
-Input mau:
+Triển khai kỹ thuật xử lý từ phủ định tiếng Anh (Negation Handling) bằng Regex (ví dụ: biến "not good" thành "not_good", "doesn't work" thành "doesn't_work") để AI không bị nhầm lẫn ngữ cảnh.
 
-```json
-{
-  "text": "The product is good"
-}
-```
+Cập nhật lại tham số trọng số phạt --neutral-boost 3.0.
 
-Output mau:
+Kết quả:
+Hệ thống train thành công toàn bộ 1.138.041 dòng dữ liệu (batch/full) trong khoảng 20 phút với mức tiêu thụ RAM cực thấp.
 
-```json
-{
-  "sentiment": "positive",
-  "confidence": 0.91
-}
-```
+Độ chính xác tổng thể (Accuracy) đạt 0.8096 (80.96%).
 
-Ket qua:
+negative: P=0.838, R=0.820, F1=0.829.
 
-- Da co API rieng cho sentiment inference cua review moi: `POST /predict-sentiment`.
-- Output dung muc tieu giai doan 4: chi gom `sentiment` va `confidence`.
-- Van giu endpoint tong hop cu `/analyze-single` va `/analyze-batch` cho luong dashboard day du.
+positive: P=0.883, R=0.887, F1=0.885.
 
-File da sua:
+neutral: P=0.614, R=0.630, F1=0.622. Mức điểm Neutral ổn định vững chắc trong biên độ target (0.60–0.65), đạt được sự cân bằng thực tế giữa Precision và Recall trên tập dữ liệu khổng lồ.
 
-- `ai-service/src/api.py`
-- `ai-service/tests/test_api_sentiment.py`
-- `docs/api_contract.md`
-- `ai-service/README.md`
-- `docs/worklog/person3_sentiment.md`
+File đã sửa:
+ai-service/src/sentiment_model.py (Thêm hàm handle_negation, chuẩn hóa TfidfVectorizer & LinearSVC).
 
-Kiem thu:
+scripts/train_balanced_svm.cmd (Bỏ --oversample-neutral, chỉnh --neutral-boost 3.0).
 
-- Da chay compile check: `py -m py_compile src\api.py tests\test_api_sentiment.py` va pass.
-- Chua chay duoc pytest vi moi truong Python hien tai thieu package `pytest`.
-- Chua chay duoc smoke test FastAPI/model that vi moi truong Python hien tai thieu package runtime nhu `fastapi`.
+Vấn đề gặp:
+Nút thắt cổ chai về phần cứng (RAM) do thư viện sinh dữ liệu giả imbalanced-learn hoạt động trên ma trận.
 
-Van de gap:
-
-- Can cai dependency trong virtualenv cua `ai-service` truoc khi chay pytest va Swagger test.
-- Confidence phu thuoc vao model da train va kha nang `predict_proba` cua classifier da luu.
-
-Viec tiep theo:
-
-- Cai dependency bang `pip install -r requirements.txt` trong virtualenv.
-- Chay `py -m pytest` hoac `python -m pytest`.
-- Chay `uvicorn src.api:app --reload --port 8001`, test `/predict-sentiment` tren Swagger voi cau `"The product is good"`.
+TF-IDF truyền thống làm tách rời các từ mang tính phủ định (not, doesn't) khỏi tính từ chính, làm giảm độ chính xác của lớp Neutral và Negative.

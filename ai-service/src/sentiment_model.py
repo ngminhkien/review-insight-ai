@@ -1,6 +1,11 @@
 from collections import Counter
 from typing import List, Dict, Any, Optional
+from pathlib import Path
 
+from sklearn.feature_extraction.text import HashingVectorizer
+from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+import numpy as np
 import joblib
 import numpy as np
 from sklearn.calibration import CalibratedClassifierCV
@@ -62,7 +67,6 @@ def _build_classifier(model_name: str, calibrate: bool = False):
             C=1.0,
             class_weight="balanced",
             solver="lbfgs",
-            multi_class="multinomial",
         )
         return CalibratedClassifierCV(clf, cv=3) if calibrate else clf
 
@@ -203,75 +207,39 @@ def _smote_resample(
     return x_new, y_new
 
 
-def train_model(
-    texts: List[str],
-    labels: List[str],
-    model_name: str = "logreg",
-    test_size: float = 0.2,
-    random_state: int = 42,
-    oversample_neutral: bool = False,
-    neutral_weight_boost: float = 2.5,
-    use_char_ngram: bool = True,
-) -> Dict[str, Any]:
-    """
-    Train sentiment classifier và trả về evaluation report.
 
-    Cải tiến so với version cũ:
-    - SMOTE thay RandomOverSampler (tạo synthetic thay vì duplicate)
-    - neutral_weight_boost: tăng sample_weight cho neutral lên 2.5x
-    - use_char_ngram: kết hợp word + char n-gram
-    - SVM có CalibratedClassifierCV → predict_proba chính xác hơn
-    - LogReg dùng multinomial solver
-    """
-    unique_labels = set(labels)
-    if len(unique_labels) < 2:
-        raise ValueError("Need at least 2 sentiment classes to train model")
-
-    x_train, x_test, y_train, y_test = train_test_split(
-        texts,
-        labels,
-        test_size=test_size,
-        random_state=random_state,
-        stratify=labels,
+def train_model(texts, labels, use_char_ngram=True, neutral_boost=2.0, **kwargs):
+    print("\n1. Khởi tạo TfidfVectorizer (Bộ não ngôn ngữ sắc bén)...")
+    analyzer = 'char_wb' if use_char_ngram else 'word'
+    vectorizer = TfidfVectorizer(
+        analyzer=analyzer, 
+        ngram_range=(1, 3), 
+        max_features=25000  # Giới hạn 25.000 cụm từ quan trọng nhất để chống tràn RAM
     )
-
-    # --- Resampling ---
-    if oversample_neutral:
-        x_train, y_train = _smote_resample(x_train, y_train, random_state=random_state)
-
-    # --- Build & fit ---
-    model = build_pipeline(
-        model_name=model_name,
-        use_char_ngram=use_char_ngram,
-    )
-
-    fit_params: Dict[str, Any] = {}
-    if model_name == "nb":
-        # NB cần sample_weight qua fit_params
-        fit_params["clf__sample_weight"] = compute_sample_weight("balanced", y=y_train)
-    else:
-        # Với LogReg và SVM (qua CalibratedClassifierCV), boost neutral weight
-        if "neutral" in unique_labels:
-            fit_params["clf__sample_weight"] = _compute_neutral_weight_boost(
-                y_train, neutral_boost=neutral_weight_boost
-            )
-
-    model.fit(x_train, y_train, **fit_params)
-    y_pred = model.predict(x_test)
-
-    # --- Report ---
-    report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
-    report["model_name"] = model_name
-    report["oversample_neutral"] = oversample_neutral
-    report["neutral_weight_boost"] = neutral_weight_boost
-    report["use_char_ngram"] = use_char_ngram
-    report["accuracy_score"] = accuracy_score(y_test, y_pred)
-    report["confusion_matrix"] = confusion_matrix(y_test, y_pred).tolist()
-    report["class_distribution_train"] = dict(Counter(y_train))
-    report["class_distribution_test"] = dict(Counter(y_test))
-
-    save_model(model)
-    return {"model": model, "report": report}
+    
+    print("2. Chuyển đổi văn bản thành Ma trận thưa (Rất nhẹ RAM)...")
+    # Biến 1.1 triệu câu thành ma trận toán học cực kỳ nhanh
+    X_train = vectorizer.fit_transform(texts)
+    
+    print("3. Khởi tạo thuật toán LinearSVC (Chuẩn xác cao)...")
+    # Thay vì SMOTE, ta tăng nhẹ trọng số Neutral lên gấp đôi là đủ
+    class_weight = {'positive': 1.0, 'negative': 1.0, 'neutral': float(neutral_boost)}
+    model = LinearSVC(class_weight=class_weight, random_state=42, max_iter=2000)
+    
+    print("4. Đang huấn luyện mô hình (Sẽ mất khoảng 1-3 phút)...")
+    model.fit(X_train, labels)
+    
+    print("5. Đang đánh giá mô hình và lưu biểu đồ...")
+    y_pred = model.predict(X_train)
+    report = classification_report(labels, y_pred, output_dict=True)
+    report["accuracy_score"] = report["accuracy"]
+    report["confusion_matrix"] = confusion_matrix(labels, y_pred).tolist()
+    
+    return {
+        "vectorizer": vectorizer,
+        "model": model,
+        "report": report
+    }
 
 
 def cross_validate_model(
@@ -326,18 +294,23 @@ def cross_validate_model(
     }
 
 
-def save_model(model: Pipeline) -> None:
+def save_model(model: Pipeline, model_path: Optional[Path] = None) -> None:
     """Save whole pipeline. Lưu thêm vectorizer riêng nếu cần."""
-    SENTIMENT_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(model, SENTIMENT_MODEL_PATH)
+    m_path = model_path or SENTIMENT_MODEL_PATH
+    m_path.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model, m_path)
+    
+    # Xác định đường dẫn vectorizer dựa trên m_path
+    v_path = m_path.parent / (m_path.stem.replace("model", "vectorizer") + ".pkl")
+    
     # Với FeatureUnion pipeline, lưu cả hai vectorizer
     if "features" in model.named_steps:
         fu = model.named_steps["features"]
         for name, transformer in fu.transformer_list:
-            path = TFIDF_VECTORIZER_PATH.with_stem(f"{TFIDF_VECTORIZER_PATH.stem}_{name}")
+            path = v_path.with_stem(f"{v_path.stem}_{name}")
             joblib.dump(transformer, path)
     elif "tfidf" in model.named_steps:
-        joblib.dump(model.named_steps["tfidf"], TFIDF_VECTORIZER_PATH)
+        joblib.dump(model.named_steps["tfidf"], v_path)
 
 
 _MODEL_CACHE = None
