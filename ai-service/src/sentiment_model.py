@@ -207,46 +207,31 @@ def _smote_resample(
     return x_new, y_new
 
 
-def train_model(texts, labels, use_char_ngram=True, neutral_boost=3.5, **kwargs):
-    print("\n1. Khởi tạo HashingVectorizer (Chống tràn RAM cực mạnh)...")
+def train_model(texts, labels, use_char_ngram=True, neutral_boost=2.0, **kwargs):
+    print("\n1. Khởi tạo TfidfVectorizer (Bộ não ngôn ngữ sắc bén)...")
     analyzer = 'char_wb' if use_char_ngram else 'word'
-    vectorizer = HashingVectorizer(
+    vectorizer = TfidfVectorizer(
         analyzer=analyzer, 
         ngram_range=(1, 3), 
-        n_features=50000  # Giới hạn 50.000 từ/cụm từ quan trọng nhất
+        max_features=25000  # Giới hạn 25.000 cụm từ quan trọng nhất để chống tràn RAM
     )
     
-    print("2. Khởi tạo thuật toán SGD (Linear SVM hỗ trợ học từng phần)...")
-    # Thay vì dùng SMOTE (sinh dữ liệu) gây nổ RAM, ta áp dụng trọng số phạt cực nặng cho lớp Neutral
+    print("2. Chuyển đổi văn bản thành Ma trận thưa (Rất nhẹ RAM)...")
+    # Biến 1.1 triệu câu thành ma trận toán học cực kỳ nhanh
+    X_train = vectorizer.fit_transform(texts)
+    
+    print("3. Khởi tạo thuật toán LinearSVC (Chuẩn xác cao)...")
+    # Thay vì SMOTE, ta tăng nhẹ trọng số Neutral lên gấp đôi là đủ
     class_weight = {'positive': 1.0, 'negative': 1.0, 'neutral': float(neutral_boost)}
-    model = SGDClassifier(loss='hinge', class_weight=class_weight, random_state=42)
+    model = LinearSVC(class_weight=class_weight, random_state=42, max_iter=2000)
     
-    # Định nghĩa trước 3 nhãn để mô hình không bỡ ngỡ khi học batch đầu tiên
-    classes = np.array(['negative', 'neutral', 'positive'])
+    print("4. Đang huấn luyện mô hình (Sẽ mất khoảng 1-3 phút)...")
+    model.fit(X_train, labels)
     
-    batch_size = 50000
-    total_samples = len(texts)
-    
-    print(f"3. Bắt đầu huấn luyện {total_samples} dòng dữ liệu theo từng Batch...")
-    for i in range(0, total_samples, batch_size):
-        batch_texts = texts[i : i + batch_size]
-        batch_labels = labels[i : i + batch_size]
-        
-        # Biến chữ thành số (Chỉ 50.000 dòng 1 lúc nên rất nhẹ)
-        X_batch = vectorizer.transform(batch_texts)
-        
-        # HỌC CẬP NHẬT DẦN (Cốt lõi của Out-of-core Learning)
-        model.partial_fit(X_batch, batch_labels, classes=classes)
-        print(f"   -> Đã học xong batch: {min(i + batch_size, total_samples)} / {total_samples}")
-        
-    print("4. Đang đánh giá mô hình (Cũng chạy theo Batch để tiết kiệm RAM)...")
-    y_pred = []
-    for i in range(0, total_samples, batch_size):
-        batch_texts = texts[i : i + batch_size]
-        X_batch = vectorizer.transform(batch_texts)
-        y_pred.extend(model.predict(X_batch))
-        
+    print("5. Đang đánh giá mô hình và lưu biểu đồ...")
+    y_pred = model.predict(X_train)
     report = classification_report(labels, y_pred, output_dict=True)
+    report["accuracy_score"] = report["accuracy"]
     report["confusion_matrix"] = confusion_matrix(labels, y_pred).tolist()
     
     return {
