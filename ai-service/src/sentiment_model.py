@@ -1,5 +1,6 @@
 from collections import Counter
 from typing import List, Dict, Any, Optional
+from pathlib import Path
 
 from sklearn.feature_extraction.text import HashingVectorizer
 from sklearn.linear_model import SGDClassifier
@@ -66,7 +67,6 @@ def _build_classifier(model_name: str, calibrate: bool = False):
             C=1.0,
             class_weight="balanced",
             solver="lbfgs",
-            multi_class="multinomial",
         )
         return CalibratedClassifierCV(clf, cv=3) if calibrate else clf
 
@@ -221,6 +221,7 @@ def handle_negation(texts):
         
     return processed_texts
 
+
 def train_model(texts, labels, use_char_ngram=True, neutral_boost=2.0, **kwargs):
     #Gọi hàm nối từ phủ định ngay đầu tiên
     texts = handle_negation(texts)
@@ -309,25 +310,37 @@ def cross_validate_model(
     }
 
 
-def save_model(model: Pipeline) -> None:
+def save_model(model: Pipeline, model_path: Optional[Path] = None) -> None:
     """Save whole pipeline. Lưu thêm vectorizer riêng nếu cần."""
-    SENTIMENT_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(model, SENTIMENT_MODEL_PATH)
+    m_path = model_path or SENTIMENT_MODEL_PATH
+    m_path.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model, m_path)
+    
+    # Xác định đường dẫn vectorizer dựa trên m_path
+    v_path = m_path.parent / (m_path.stem.replace("model", "vectorizer") + ".pkl")
+    
     # Với FeatureUnion pipeline, lưu cả hai vectorizer
     if "features" in model.named_steps:
         fu = model.named_steps["features"]
         for name, transformer in fu.transformer_list:
-            path = TFIDF_VECTORIZER_PATH.with_stem(f"{TFIDF_VECTORIZER_PATH.stem}_{name}")
+            path = v_path.with_stem(f"{v_path.stem}_{name}")
             joblib.dump(transformer, path)
     elif "tfidf" in model.named_steps:
-        joblib.dump(model.named_steps["tfidf"], TFIDF_VECTORIZER_PATH)
+        joblib.dump(model.named_steps["tfidf"], v_path)
 
+
+_MODEL_CACHE = None
 
 def load_model() -> Pipeline:
     """Load trained model."""
+    global _MODEL_CACHE
+    if _MODEL_CACHE is not None:
+        return _MODEL_CACHE
+        
     if not SENTIMENT_MODEL_PATH.exists():
         raise FileNotFoundError(f"Model not found: {SENTIMENT_MODEL_PATH}")
-    return joblib.load(SENTIMENT_MODEL_PATH)
+    _MODEL_CACHE = joblib.load(SENTIMENT_MODEL_PATH)
+    return _MODEL_CACHE
 
 
 def predict_sentiment(texts: List[str]) -> List[Dict[str, Any]]:

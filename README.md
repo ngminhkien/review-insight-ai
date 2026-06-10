@@ -18,7 +18,7 @@ Muc tieu cua du an:
 
 ```text
 Frontend React
-    -> Backend C# ASP.NET Core
+    -> Backend PHP
         -> AI Service Python FastAPI
             -> Preprocessing
             -> Sentiment Model
@@ -32,7 +32,7 @@ Frontend React
 ```text
 review-insight-ai/
 ├── ai-service/          # Phan AI xu ly review
-├── backend/             # Tai lieu goi y cho backend C#
+├── backend/             # Backend PHP bridge giua frontend va AI service
 ├── frontend/            # Tai lieu goi y cho frontend React
 ├── data/                # Du lieu mau
 ├── docs/                # Tai lieu, API contract, phan cong, worklog

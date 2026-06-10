@@ -150,54 +150,32 @@ Viec tiep theo:
 - Thử nghiệm trên miền dữ liệu chuẩn (Electronics): Mô hình chạy tối ưu, nhận diện đúng Sắc thái (Sentiment) và Độ tự tin (Confidence) đạt tới 98.42% ở các câu chê mạnh. Luồng API trả về cấu trúc JSON analytics, insights đồng bộ hoàn hảo.
 
 ## Ngay 7: 
-1. Khởi tạo & Cấu hình môi trường (Môi trường mới)
-Vấn đề: Chuyển đổi môi trường làm việc sang máy tính mới, đối mặt với lỗi thiếu dependencies và chính sách bảo mật của Windows.
+Đã làm:
+Khắc phục triệt để lỗi tràn bộ nhớ RAM (ArrayMemoryError 68GB) khi nạp tập dữ liệu lớn bằng cách gỡ bỏ thuật toán SMOTE (tránh việc bung nén ma trận thưa bằng hàm .toarray()).
 
-Hành động giải quyết:
+Tối ưu hóa pipeline huấn luyện bằng cách dùng TfidfVectorizer (giới hạn max_features=25000) kết hợp với LinearSVC, giúp mô hình xử lý mượt mà hơn 1.1 triệu dòng review.
 
-Khởi tạo lại môi trường ảo .venv hoàn toàn mới.
+Triển khai kỹ thuật xử lý từ phủ định tiếng Anh (Negation Handling) bằng Regex (ví dụ: biến "not good" thành "not_good", "doesn't work" thành "doesn't_work") để AI không bị nhầm lẫn ngữ cảnh.
 
-Mở khóa quyền chạy script trên PowerShell (Set-ExecutionPolicy RemoteSigned).
+Cập nhật lại tham số trọng số phạt --neutral-boost 3.0.
 
-Đồng bộ file dữ liệu thô (raw_reviews_train_balanced.csv) dung lượng lớn không có sẵn trên Git.
+Kết quả:
+Hệ thống train thành công toàn bộ 1.138.041 dòng dữ liệu (batch/full) trong khoảng 20 phút với mức tiêu thụ RAM cực thấp.
 
-Cài đặt thành công các thư viện cốt lõi (pandas, scikit-learn) và tích hợp thêm công cụ trực quan hóa dữ liệu (seaborn, matplotlib) để xuất ảnh Ma trận nhầm lẫn (Confusion Matrix).
+Độ chính xác tổng thể (Accuracy) đạt 0.8096 (80.96%).
 
-2. Sự cố tràn bộ nhớ (ArrayMemoryError - 68GB RAM)
-Mô tả lỗi: Khi áp dụng thuật toán SMOTE (--oversample-neutral) để giải quyết vấn đề thiếu hụt dữ liệu lớp Neutral, hệ thống báo lỗi tràn RAM (yêu cầu cấp phát 68.7 GB).
+negative: P=0.838, R=0.820, F1=0.829.
 
-Nguyên nhân gốc rễ (Root Cause): Khâu sinh dữ liệu giả lập của SMOTE có gọi lệnh .toarray(), ép hệ thống phải "bung nén" toàn bộ Ma trận thưa (Sparse Matrix) chứa >900.000 dòng đánh giá và 10.000 cột từ vựng thành Ma trận đặc (Dense Matrix). Khối lượng số float64 khổng lồ này vượt xa sức chịu đựng của phần cứng cá nhân.
+positive: P=0.883, R=0.887, F1=0.885.
 
-3. Nghiên cứu & Thử nghiệm: Kỹ thuật Out-of-core Learning
-Mục tiêu: Cho phép máy tính học trên tập dữ liệu khổng lồ mà không cần nạp toàn bộ vào RAM cùng lúc.
+neutral: P=0.614, R=0.630, F1=0.622. Mức điểm Neutral ổn định vững chắc trong biên độ target (0.60–0.65), đạt được sự cân bằng thực tế giữa Precision và Recall trên tập dữ liệu khổng lồ.
 
-Hành động:
+File đã sửa:
+ai-service/src/sentiment_model.py (Thêm hàm handle_negation, chuẩn hóa TfidfVectorizer & LinearSVC).
 
-Thay thế TfidfVectorizer bằng HashingVectorizer (do Tfidf không hỗ trợ học từng phần).
+scripts/train_balanced_svm.cmd (Bỏ --oversample-neutral, chỉnh --neutral-boost 3.0).
 
-Thay thế LinearSVC bằng SGDClassifier (hỗ trợ hàm .partial_fit()).
+Vấn đề gặp:
+Nút thắt cổ chai về phần cứng (RAM) do thư viện sinh dữ liệu giả imbalanced-learn hoạt động trên ma trận.
 
-Viết lại hàm train_model để cắt dữ liệu thành từng lô nhỏ (batch_size = 50.000 dòng) và nạp lần lượt.
-
-Kết quả thử nghiệm: Mô hình đã "nhai" mượt mà 1.138.041 dòng dữ liệu mà không tốn quá 1GB RAM.
-
-Hạn chế: Tuy nhiên, độ chính xác (Accuracy) bị sụt giảm xuống còn 63%. Nguyên nhân do thuật toán Hashing không đánh giá được mức độ quan trọng của từ (như Tfidf) và SGD chưa hội tụ đủ sâu chỉ sau 1 epoch.
-
-4. Tối ưu hóa chung cuộc (The Ultimate Fix)
-Chiến lược mới: Kết hợp sức mạnh thuật toán tối đa với mức tiêu thụ RAM tối thiểu. Nhận định rằng nếu loại bỏ SMOTE, Ma trận thưa sẽ không bị bung nén.
-
-Triển khai kỹ thuật:
-
-Bộ lọc: Khôi phục TfidfVectorizer (cấu hình n-gram 1-3, char_wb) và giới hạn max_features=25000 để bao quát bộ từ vựng quan trọng nhất nhưng vẫn giữ dung lượng RAM ở mức an toàn (~500MB).
-
-Thuật toán: Khôi phục LinearSVC. Thay vì dùng SMOTE để thêm dữ liệu Neutral ảo, áp dụng cơ chế Trọng số phạt (Class Weights) thông qua tham số --neutral-boost 2.0 để ép mô hình học kỹ hơn nhãn thiểu số.
-
-Kết quả nghiệm thu:
-
-Mô hình huấn luyện thành công toàn bộ 1.1 triệu dòng dữ liệu 
-
-Độ chính xác (Accuracy): Đạt 80.51% (mức xuất sắc cho bài toán 3 nhãn truyền thống).
-
-F1-Score: Positive đạt 0.88, Negative đạt 0.82, và Neutral đạt 0.61 (tiệm cận tiêu chuẩn dự án, có sự cân bằng cực tốt giữa Precision và Recall).
-
-Code tự động lưu file mô hình .pkl và xuất biểu đồ confusion_matrix.png sạch sẽ vào thư mục reports/.
+TF-IDF truyền thống làm tách rời các từ mang tính phủ định (not, doesn't) khỏi tính từ chính, làm giảm độ chính xác của lớp Neutral và Negative.

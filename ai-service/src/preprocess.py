@@ -26,6 +26,7 @@ EMOJI_PATTERN = re.compile(
 # Không xoá negation (no, not, never, don't, etc.) vì rất quan trọng cho sentiment
 _NEGATION_SAFE = True  # reminder: không xoá "not", "no", "never"
 
+
 def handle_negation(texts):
     print("-> Đang xử lý ghép từ phủ định (Negation Handling)...")
     
@@ -45,6 +46,7 @@ def handle_negation(texts):
         
     return processed_texts
  
+
 def remove_emoji(text: str) -> str:
     """Remove emoji; thay bằng khoảng trắng để không ghép từ liền nhau."""
     return EMOJI_PATTERN.sub(" ", text)
@@ -106,17 +108,19 @@ def clean_text(text: Any, extract_signals: bool = True) -> str:
     Clean raw review text cho ML.
 
     Quy trình:
-    1. Lowercase
+    1. Lowercase & Expand Contractions
     2. Remove emoji
     3. Extract sentiment signals (trước khi xoá punctuation)
     4. Remove HTML/URL noise
     5. Normalize repeated chars
     6. Remove punctuation
     7. Normalize whitespace
+    8. Negation handling
     """
     if text is None:
         return ""
     text = str(text).lower()
+    text = expand_contractions(text)
     text = remove_emoji(text)
 
     # Extract signals TRƯỚC khi lowercase punctuation bị xoá
@@ -129,6 +133,8 @@ def clean_text(text: Any, extract_signals: bool = True) -> str:
     text = normalize_repeated_chars(text)
     text = remove_punctuation(text)
     text = re.sub(r"\s+", " ", text).strip()
+    
+    text = handle_negation(text)
     return text
 
 

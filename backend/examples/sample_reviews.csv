@@ -1,0 +1,5 @@
+review_id,product_id,product_type,rating,review_text,date,source,user_id
+1,P001,phone,5,"Good quality and fast delivery",2024-01-02,Demo,U001
+2,P001,phone,1,"Poor packaging and broken item",2024-01-03,Demo,U002
+3,P002,laptop,3,"The product is okay but delivery was slow",2024-01-04,Demo,U003
+4,P003,cosmetics,4,"Nice price and easy to use",2024-01-05,Demo,U004

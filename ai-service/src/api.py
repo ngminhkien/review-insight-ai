@@ -3,9 +3,19 @@ from typing import Any, Dict, List
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-from .insight_generator import generate_template_insights
+from .analytics import aggregate_statistics
+from .aspect_extractor import detect_aspects
+from .insight_generator import (
+    generate_executive_report,
+    generate_llm_business_report,
+    generate_template_insights,
+    generate_template_summary,
+)
 from .pipeline import analyze_batch_reviews, analyze_single_review
+from .priority import detect_priority
+from .preprocess import clean_text
 from .recommendation import generate_recommendations
+from .sentiment_model import predict_sentiment
 
 app = FastAPI(title="Review Insight AI Service", version="0.1.0")
 
@@ -23,8 +33,36 @@ class BatchAnalyzeRequest(BaseModel):
     reviews: List[ReviewInput]
 
 
+class SentimentInferenceRequest(BaseModel):
+    text: str = Field(..., min_length=1)
+
+
+class SentimentInferenceResponse(BaseModel):
+    sentiment: str
+    confidence: float | None
+
+
+class AspectExtractionRequest(BaseModel):
+    text: str = Field(..., min_length=1)
+    product_type: str | None = "general"
+
+
+class PriorityDetectionRequest(BaseModel):
+    text: str = Field(..., min_length=1)
+    sentiment: str | None = None
+    rating: int | None = 3
+    aspects: List[str] | None = None
+    product_type: str | None = "general"
+
+
+class AnalyticsRequest(BaseModel):
+    reviews: List[Dict[str, Any]]
+
+
 class InsightRequest(BaseModel):
     analytics: Dict[str, Any]
+    use_llm: bool | None = False
+    llm_model: str | None = "gpt-4.1"
 
 
 @app.get("/health")
@@ -43,8 +81,61 @@ def analyze_batch(payload: BatchAnalyzeRequest) -> Dict[str, Any]:
     return analyze_batch_reviews(reviews)
 
 
+@app.post("/analyze-reviews")
+def analyze_reviews(payload: BatchAnalyzeRequest) -> Dict[str, Any]:
+    reviews = [item.model_dump() for item in payload.reviews]
+    return analyze_batch_reviews(reviews)
+
+
+@app.post("/predict-sentiment", response_model=SentimentInferenceResponse)
+def infer_sentiment(payload: SentimentInferenceRequest) -> Dict[str, Any]:
+    cleaned = clean_text(payload.text)
+    return predict_sentiment([cleaned])[0]
+
+
+@app.post("/extract-aspects", response_model=List[str])
+def extract_aspects(payload: AspectExtractionRequest) -> List[str]:
+    cleaned = clean_text(payload.text)
+    product_type = payload.product_type or "general"
+    return detect_aspects(cleaned, product_type=product_type)
+
+
+@app.post("/detect-priority")
+def infer_priority(payload: PriorityDetectionRequest) -> Dict[str, str]:
+    cleaned = clean_text(payload.text)
+    product_type = payload.product_type or "general"
+    aspects = payload.aspects or detect_aspects(cleaned, product_type=product_type)
+    sentiment = payload.sentiment
+    if sentiment is None:
+        sentiment = predict_sentiment([cleaned])[0]["sentiment"]
+    priority = detect_priority(
+        cleaned,
+        sentiment=sentiment,
+        rating=payload.rating or 3,
+        aspects=aspects,
+    )
+    return {"priority": priority}
+
+
+@app.post("/aggregate-analytics")
+def aggregate_analytics(payload: AnalyticsRequest) -> Dict[str, Any]:
+    return aggregate_statistics(payload.reviews)
+
+
 @app.post("/generate-insight")
 def generate_insight(payload: InsightRequest) -> Dict[str, Any]:
     insights = generate_template_insights(payload.analytics)
     recommendations = generate_recommendations(payload.analytics)
-    return {"insights": insights, "recommendations": recommendations}
+    response: Dict[str, Any] = {
+        "summary": generate_template_summary(payload.analytics),
+        "insights": insights,
+        "recommendations": recommendations,
+        "executive_report": generate_executive_report(payload.analytics, recommendations),
+        "llm_report": None,
+    }
+    if payload.use_llm:
+        response["llm_report"] = generate_llm_business_report(
+            payload.analytics,
+            model=payload.llm_model or "gpt-4.1",
+        )
+    return response

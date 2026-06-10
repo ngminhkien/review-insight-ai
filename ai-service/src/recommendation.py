@@ -14,8 +14,13 @@ RECOMMENDATION_RULES = {
 def generate_recommendations(stats: Dict[str, Any]) -> List[str]:
     """Generate recommendations from top negative aspects."""
     recommendations = []
-    for item in stats.get("top_negative_aspects", [])[:5]:
-        aspect = item.get("aspect")
+    top_negative = stats.get("top_negative_aspects", {})
+    if isinstance(top_negative, dict):
+        aspects = list(top_negative.keys())[:5]
+    else:
+        aspects = [item.get("aspect") for item in top_negative[:5] if isinstance(item, dict)]
+
+    for aspect in aspects:
         rule = RECOMMENDATION_RULES.get(aspect)
         if rule:
             recommendations.append(rule)
