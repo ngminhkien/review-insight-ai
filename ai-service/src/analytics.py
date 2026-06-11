@@ -1,6 +1,11 @@
 from collections import Counter, defaultdict
+import re
 from typing import Any, Dict, List
 
+try:
+    from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+except ImportError:
+    ENGLISH_STOP_WORDS = set()
 
 SENTIMENT_LABELS = ("positive", "neutral", "negative")
 PRIORITY_LABELS = ("high", "medium", "low")
@@ -43,6 +48,65 @@ def _product_sentiments(reviews: List[Dict[str, Any]]) -> Dict[str, Dict[str, in
     }
 
 
+def _get_frequent_words(reviews: List[Dict[str, Any]], sentiment: str) -> Dict[str, int]:
+    """Get top 15 frequent meaningful words from reviews of a specific sentiment."""
+    word_counter: Counter[str] = Counter()
+    for item in reviews:
+        if str(item.get("sentiment", "")).lower() != sentiment:
+            continue
+        text = str(item.get("clean_text") or item.get("review_text", "")).lower()
+        words = re.findall(r'\b[a-z]{3,}\b', text)
+        for w in words:
+            if w not in ENGLISH_STOP_WORDS and w not in ["br", "href", "quot"]:
+                word_counter[w] += 1
+    return dict(word_counter.most_common(15))
+
+
+def _aspect_sentiment_breakdown(reviews: List[Dict[str, Any]]) -> Dict[str, Dict[str, int]]:
+    """Count sentiments for each aspect."""
+    aspect_counts: Dict[str, Counter[str]] = defaultdict(Counter)
+    for item in reviews:
+        sentiment = str(item.get("sentiment", "neutral")).lower()
+        aspects = item.get("aspects") or []
+        for aspect in aspects:
+            aspect_counts[str(aspect)][sentiment] += 1
+
+    return {
+        aspect: {label: int(counts.get(label, 0)) for label in SENTIMENT_LABELS}
+        for aspect, counts in aspect_counts.items()
+    }
+
+
+def _get_frequent_words_by_aspect(reviews: List[Dict[str, Any]]) -> Dict[str, Dict[str, Dict[str, int]]]:
+    """Get top frequent meaningful words for each aspect, separated by sentiment."""
+    # aspect -> sentiment -> Counter
+    aspect_words: Dict[str, Dict[str, Counter[str]]] = defaultdict(
+        lambda: {"positive": Counter(), "negative": Counter()}
+    )
+    
+    for item in reviews:
+        sentiment = str(item.get("sentiment", "neutral")).lower()
+        if sentiment not in ["positive", "negative"]:
+            continue
+            
+        aspects = item.get("aspects") or []
+        text = str(item.get("clean_text") or item.get("review_text", "")).lower()
+        words = re.findall(r'\b[a-z]{3,}\b', text)
+        filtered_words = [w for w in words if w not in ENGLISH_STOP_WORDS and w not in ["br", "href", "quot"]]
+        
+        for aspect in aspects:
+            for w in filtered_words:
+                aspect_words[str(aspect)][sentiment][w] += 1
+                
+    result = {}
+    for aspect, sents in aspect_words.items():
+        result[aspect] = {
+            "positive": dict(sents["positive"].most_common(10)),
+            "negative": dict(sents["negative"].most_common(10)),
+        }
+    return result
+
+
 def aggregate_statistics(reviews: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Convert analyzed review rows into dashboard-ready aggregate statistics.
@@ -66,4 +130,8 @@ def aggregate_statistics(reviews: List[Dict[str, Any]]) -> Dict[str, Any]:
         "top_negative_aspects": top_negative_aspects,
         "top_positive_aspects": top_positive_aspects,
         "product_sentiments": _product_sentiments(reviews),
+        "frequent_words_positive": _get_frequent_words(reviews, "positive"),
+        "frequent_words_negative": _get_frequent_words(reviews, "negative"),
+        "aspect_sentiment_breakdown": _aspect_sentiment_breakdown(reviews),
+        "aspect_word_stats": _get_frequent_words_by_aspect(reviews),
     }

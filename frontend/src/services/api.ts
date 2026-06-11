@@ -35,10 +35,29 @@ export interface Dataset {
   created_at: string;
 }
 
+export interface AnalyticsPayload {
+  total_reviews: number;
+  positive: number;
+  neutral: number;
+  negative: number;
+  sentiment_distribution: Record<string, number>;
+  priority_distribution: Record<string, number>;
+  top_negative_aspects: Record<string, number>;
+  top_positive_aspects: Record<string, number>;
+  frequent_words_positive?: Record<string, number>;
+  frequent_words_negative?: Record<string, number>;
+  aspect_sentiment_breakdown?: Record<string, Record<string, number>>;
+  aspect_word_stats?: Record<string, {
+    positive: Record<string, number>;
+    negative: Record<string, number>;
+  }>;
+  product_sentiments?: Record<string, Record<string, number>>;
+}
+
 export interface AnalysisReport {
   id: number;
   dataset_id: number;
-  analytics: any;
+  analytics: AnalyticsPayload;
   insights: string[];
   recommendations: string[];
   created_at: string;

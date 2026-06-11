@@ -122,9 +122,9 @@ export const SingleAnalyzePage: React.FC = () => {
               >
                 <option value="general" className="bg-slate-900">Tổng Hợp (General)</option>
                 <option value="phone" className="bg-slate-900">Điện Thoại (Phone)</option>
-                <option value="fashion" className="bg-slate-900">Thời Trang (Fashion)</option>
-                <option value="cosmetics" className="bg-slate-900">Mỹ Phẩm (Cosmetics)</option>
-                <option value="food" className="bg-slate-900">Ẩm Thực (Food)</option>
+                <option value="laptop" className="bg-slate-900">Laptop (Máy Tính Xách Tay)</option>
+                <option value="audio_device" className="bg-slate-900">Thiết Bị Âm Thanh (Audio)</option>
+                <option value="smartwatch" className="bg-slate-900">Đồng Hồ Thông Minh (Smartwatch)</option>
               </select>
             </div>
           </div>

@@ -185,7 +185,16 @@ HTML;
         $llmReport = $llmResponse['llm_report'] ?? null;
 
         if (!is_array($llmReport) || ($llmReport['enabled'] ?? false) !== true) {
-            Response::error('Gemini LLM is not configured.', 422, [
+            $errorCode = $llmReport['error_code'] ?? 'unconfigured';
+            $errorTitle = 'Gemini LLM Error';
+            
+            if ($errorCode === 'unconfigured' || strpos((string)($llmReport['reason'] ?? ''), 'not set') !== false) {
+                $errorTitle = 'Gemini LLM is not configured.';
+            } elseif ($errorCode === 'service_error' || $errorCode === 'connection_error') {
+                $errorTitle = 'Lỗi kết nối Gemini API.';
+            }
+
+            Response::error($errorTitle, 422, [
                 'message' => $llmReport['reason'] ?? 'Set GEMINI_API_KEY and restart the services.',
             ]);
             exit;

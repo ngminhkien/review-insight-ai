@@ -83,6 +83,24 @@ def remove_punctuation(text: str) -> str:
     return re.sub(r"[\W_]+", " ", text, flags=re.UNICODE)
 
 
+CONTRACTION_MAP = {
+    "ain't": "is not", "aren't": "are not", "can't": "cannot", "couldn't": "could not",
+    "didn't": "did not", "doesn't": "does not", "don't": "do not", "hadn't": "had not",
+    "hasn't": "has not", "haven't": "have not", "isn't": "is not", "mightn't": "might not",
+    "mustn't": "must not", "needn't": "need not", "shan't": "shall not", "shouldn't": "should not",
+    "wasn't": "was not", "weren't": "were not", "won't": "will not", "wouldn't": "would not"
+}
+
+CONTRACTION_PATTERN = re.compile(r'\b(' + '|'.join(CONTRACTION_MAP.keys()) + r')\b', flags=re.IGNORECASE|re.DOTALL)
+
+def expand_contractions(text: str) -> str:
+    def replace(match):
+        return CONTRACTION_MAP.get(match.group(0), match.group(0))
+    return CONTRACTION_PATTERN.sub(replace, text)
+
+def handle_negation(text: str) -> str:
+    return re.sub(r'\b(not|no|never)\s+(\w+)\b', r'\1_\2', text, flags=re.IGNORECASE)
+
 def clean_text(text: Any, extract_signals: bool = True) -> str:
     """
     Clean raw review text cho ML.

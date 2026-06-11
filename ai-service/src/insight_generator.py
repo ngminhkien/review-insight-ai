@@ -183,16 +183,19 @@ def build_llm_context(
 def generate_llm_prompt(context: Dict[str, Any]) -> str:
     """Create an outcome-focused prompt for product review analysis."""
     return f"""
-Muc tieu: dua ra nhan xet va de xuat hanh dong cho tung san pham dua tren ket qua
-phan tich tho cua model sentiment/aspect/priority.
+Muc tieu: Dua ra nhan xet ngan gon, trong tam va de xuat hanh dong cho tung san pham dua tren ket qua phan tich.
 
 Yeu cau:
-- Viet bang tieng Viet ro rang, phu hop cho quan ly san pham.
-- Chi su dung du lieu duoc cung cap. Khong bia them doanh thu, khach hang hay nguyen nhan.
-- Phan biet diem manh, van de va de xuat cho tung product_id.
-- Uu tien van de co priority high, sentiment negative va aspect lap lai.
-- De xuat phai cu the, co the hanh dong va gan voi bang chung trong du lieu.
-- Neu mau review nho hoac thieu du lieu, ghi ro trong limitations.
+- Viet bao cao bang tieng Viet ro rang, trinh bay ngan gon, de doc cho quan ly san pham.
+- (Luu y: Du lieu dau vao va cac tu khoa la tieng Anh chuyen nganh dien tu / Electronics).
+- Phan chia theo cac de muc ro rang (VD: 📌 Tóm tắt, 🟢 Điểm mạnh, 🔴 Vấn đề, 💡 Đề xuất).
+- Giu lai cac nhan xet trong tam nhat (uu tien van de co priority high, sentiment negative nhieu).
+- **Phan tich tu khoa theo khia canh (Aspect Word Stats):** Dua vao `aspect_word_stats` de chuan doan loi chi tiet cho TUNG khia canh (VD: khia canh 'battery' co tu tieu cuc 'drain', khia canh 'screen' co tu 'flicker').
+- **Phan tich khia canh (Aspect Breakdown):** Dung `aspect_sentiment_breakdown` de xem khia canh nao bi phan nan nhieu nhat vs khen nhieu nhat.
+- Minh hoa bang 1-2 vi du cu the tu review thuc te de cung co cho nhan xet.
+- Chi su dung du lieu duoc cung cap, khong bia them doanh thu hay nguyen nhan.
+- De xuat hanh dong can thiet thuc va gan lien voi bang chung.
+- Neu thieu du lieu, ghi ro trong phan limitations.
 
 Du lieu:
 {json.dumps(context, ensure_ascii=False, indent=2)}
@@ -204,6 +207,7 @@ def _request_gemini_advice(
     model: str,
     prompt: str,
 ) -> ProductAdvice:
+    # pyrefly: ignore [missing-import]
     from google import genai
     from google.genai import types
 

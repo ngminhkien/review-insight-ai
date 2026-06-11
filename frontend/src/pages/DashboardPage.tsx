@@ -8,6 +8,9 @@ import { InsightCard } from '../components/InsightCard';
 import { RecommendationCard } from '../components/RecommendationCard';
 import { LlmAdvicePanel } from '../components/LlmAdvicePanel';
 import { ReviewTable } from '../components/ReviewTable';
+import { FrequentWordsCard } from '../components/FrequentWordsCard';
+import { TopAspectsCard } from '../components/TopAspectsCard';
+import { ProductSentimentChart } from '../components/ProductSentimentChart';
 import { 
   MessageSquare, 
   Smile, 
@@ -94,7 +97,7 @@ export const DashboardPage: React.FC = () => {
   // Compute numbers based on active mode
   const metrics = React.useMemo(() => {
     if (report) {
-      const analytics = report.analytics || {};
+      const analytics = report.analytics || ({} as any);
       const sentimentDist = analytics.sentiment_distribution || {};
       const priorityDist = analytics.priority_distribution || {};
 
@@ -124,7 +127,15 @@ export const DashboardPage: React.FC = () => {
         neutralPct: total > 0 ? ((neu / total) * 100).toFixed(1) : '0',
         negativePct: total > 0 ? ((neg / total) * 100).toFixed(1) : '0',
         highPriority: priorityDist.high || reviews.filter(r => r.priority === 'high').length,
+        priorityDistribution: priorityDist,
+        topNegativeAspects: analytics.top_negative_aspects || {},
+        topPositiveAspects: analytics.top_positive_aspects || {},
+        productSentiments: analytics.product_sentiments || {},
         aspects: aspectDist,
+        aspectBreakdown: analytics.aspect_sentiment_breakdown,
+        aspectWordStats: analytics.aspect_word_stats,
+        frequentWordsPositive: analytics.frequent_words_positive,
+        frequentWordsNegative: analytics.frequent_words_negative,
         insights: report.insights || [],
         recommendations: report.recommendations || [],
       };
@@ -158,7 +169,15 @@ export const DashboardPage: React.FC = () => {
         neutralPct: total > 0 ? ((neu / total) * 100).toFixed(1) : '0',
         negativePct: total > 0 ? ((neg / total) * 100).toFixed(1) : '0',
         highPriority: summary.high_priority || 0,
+        priorityDistribution: undefined,
+        topNegativeAspects: undefined,
+        topPositiveAspects: undefined,
+        productSentiments: undefined,
         aspects: globalAspects,
+        aspectBreakdown: undefined,
+        aspectWordStats: undefined,
+        frequentWordsPositive: undefined,
+        frequentWordsNegative: undefined,
         insights: [
           'Số liệu tích lũy toàn hệ thống của tất cả các tệp đánh giá.',
           total > 0 ? `Tỷ lệ hài lòng chung đạt mức ${((pos / total) * 100).toFixed(1)}%.` : '',
@@ -178,7 +197,15 @@ export const DashboardPage: React.FC = () => {
       neutralPct: '0',
       negativePct: '0',
       highPriority: 0,
+      priorityDistribution: undefined,
+      topNegativeAspects: undefined,
+      topPositiveAspects: undefined,
+      productSentiments: undefined,
       aspects: {},
+      aspectBreakdown: undefined,
+      aspectWordStats: undefined,
+      frequentWordsPositive: undefined,
+      frequentWordsNegative: undefined,
       insights: [],
       recommendations: [],
     };
@@ -321,14 +348,43 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 5: High Priority */}
+      </div>
+
+      {/* Priority Distribution Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center border border-rose-500/20">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Ưu Tiên: Cao (High)</p>
+            <h4 className="text-2xl font-extrabold text-rose-400 mt-0.5 font-mono">
+              {metrics.priorityDistribution?.high || metrics.highPriority || 0}
+            </h4>
+          </div>
+        </div>
+
         <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center border border-amber-500/20">
             <AlertTriangle className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Cần Xử Lý Gấp</p>
-            <h4 className="text-2xl font-extrabold text-amber-400 mt-0.5 font-mono">{metrics.highPriority}</h4>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Ưu Tiên: Trung Bình</p>
+            <h4 className="text-2xl font-extrabold text-amber-400 mt-0.5 font-mono">
+              {metrics.priorityDistribution?.medium || 0}
+            </h4>
+          </div>
+        </div>
+
+        <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Ưu Tiên: Thấp</p>
+            <h4 className="text-2xl font-extrabold text-emerald-400 mt-0.5 font-mono">
+              {metrics.priorityDistribution?.low || 0}
+            </h4>
           </div>
         </div>
       </div>
@@ -336,8 +392,23 @@ export const DashboardPage: React.FC = () => {
       {/* Grid: Charts (Sentiment & Aspects) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SentimentChart data={metrics} />
-        <AspectBarChart data={metrics.aspects} />
+        <AspectBarChart data={metrics.aspects} breakdownData={metrics.aspectBreakdown} />
       </div>
+
+      {/* Grid: Product Sentiment & Top Aspects */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ProductSentimentChart data={metrics.productSentiments} />
+        <TopAspectsCard topPositive={metrics.topPositiveAspects} topNegative={metrics.topNegativeAspects} />
+      </div>
+
+      {/* Frequent Words Section */}
+      {(metrics.frequentWordsPositive || metrics.frequentWordsNegative || metrics.aspectWordStats) && (
+        <FrequentWordsCard 
+          positiveWords={metrics.frequentWordsPositive} 
+          negativeWords={metrics.frequentWordsNegative} 
+          aspectWordStats={metrics.aspectWordStats}
+        />
+      )}
 
       {/* Grid: AI Insights & Recommendations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

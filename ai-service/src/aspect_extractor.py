@@ -3,25 +3,26 @@ from typing import Dict, List
 
 ASPECT_KEYWORDS: Dict[str, List[str]] = {
     "delivery": ["ship", "shipping", "delivery", "late", "delay", "fast", "arrived"],
-    "quality": ["quality", "broken", "durable", "material", "defect", "damaged"],
+    "quality": ["quality", "broken", "durable", "material", "defect", "damaged", "build"],
     "price": ["price", "expensive", "cheap", "value", "cost"],
-    "packaging": ["package", "packaging", "box", "wrapped", "poor packaging"],
+    "packaging": ["package", "packaging", "box", "wrapped"],
     "customer_service": ["support", "staff", "service", "response", "help", "customer"],
     "warranty": ["warranty", "return", "refund", "replace", "exchange"],
-    "usability": ["easy", "hard", "use", "setup", "install", "interface"],
-    "battery": ["battery", "charge", "charging", "drains"],
-    "screen": ["screen", "display", "flickering"],
-    "taste": ["taste", "delicious", "salty", "cold food", "food"],
-    "skin": ["skin", "irritation", "oily", "fragrance"],
-    "size": ["size", "fit", "wrong size"],
+    "usability": ["easy", "hard", "use", "setup", "install", "interface", "software"],
+    "battery": ["battery", "charge", "charging", "drains", "power"],
+    "screen": ["screen", "display", "flickering", "pixel", "touch", "brightness"],
+    "performance": ["speed", "fast", "slow", "lag", "heat", "hot", "performance", "fps", "smooth"],
+    "camera": ["camera", "photo", "video", "lens", "blur", "focus"],
+    "audio": ["sound", "audio", "speaker", "volume", "bass", "mic", "microphone"],
+    "connectivity": ["wifi", "bluetooth", "connection", "signal", "network", "drop", "disconnect"],
 }
 
 PRODUCT_TYPE_ASPECTS: Dict[str, List[str]] = {
-    "phone": ["battery", "screen", "quality", "price", "delivery", "customer_service"],
-    "food": ["taste", "delivery", "price", "customer_service"],
-    "fashion": ["size", "quality", "price", "delivery", "customer_service"],
-    "cosmetics": ["skin", "quality", "price", "delivery"],
-    "general": ["delivery", "quality", "price", "packaging", "customer_service", "warranty", "usability"],
+    "phone": ["battery", "screen", "camera", "performance", "audio", "connectivity", "quality", "price", "customer_service", "delivery"],
+    "laptop": ["battery", "screen", "performance", "audio", "connectivity", "usability", "quality", "price", "warranty", "customer_service"],
+    "audio_device": ["audio", "battery", "connectivity", "quality", "price", "usability", "delivery"],
+    "smartwatch": ["battery", "screen", "performance", "connectivity", "quality", "price", "usability"],
+    "general": ["quality", "price", "delivery", "packaging", "customer_service", "warranty", "usability", "performance", "battery", "screen", "connectivity"],
 }
 
 
